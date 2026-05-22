@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang='zh-cn'>
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta http-equiv="Cache-Control"  content="no-transform">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 蝉知企业门户</title>
+<meta name="keywords" content="企业门户系统 企业建站系统 开源CMS">
+<meta name="description" content="蝉知门户系统（chanzhiEPS）是一款开源免费的企业门户系统，企业建站系统，php开源CMS系统。它专为企业营销设计，功能专业全面，内置了文章发布、会员管理、论坛评论、产品展示、在线销售、客服跟踪等功能。以LGPL协议发布，真开源，真免费。注重SEO，注重营销，支持移动设备。界面简洁大方，使用简单方便，功能专业强大，是企业建站的首选！同时蝉知系统还内置了微信公众平台功能，一个网站，电脑、手机、微信体验俱佳！">
+<script>var config={"webRoot":"\/","cookieLife":30,"cookiePath":"\/","requestType":"GET","requestFix":"-","moduleVar":"m","methodVar":"f","viewVar":"t","defaultView":"html","themeRoot":"\/theme\/","currentModule":"user","currentMethod":"login","clientLang":"zh-cn","requiredFields":"","save":"\u4fdd\u5b58","router":"\/admin.php","runMode":"admin","langCode":""}
+</script>
+<link rel='stylesheet' href='/theme/default/default/chanzhi.all.admin.css?v=7.7' type='text/css' media='screen'/>
+<script src='/js/chanzhi.all.admin.js?v=7.7' type='text/javascript'></script>
+<style>.user-control-nav{margin-bottom: 20px;}
+@media (max-width: 480px) { .hidden-xxs {display: none} .page {font-size: 12px}}
+@media (max-width: 400px) { .hidden-xxxs {display: none}}
+#login .panel{width: 80%; margin: 5% auto;max-width: 450px;}
+#login .panel-body{min-height: 230px;}
+#login .panel-heading{background-color: transparent;}
+
+.btn-oauth{text-align: left;padding-left: 130px;font-size: 24px;line-height: 50px;position: relative;text-shadow: 0 1px 0 rgba(0,0,0,0.5);color: #333;background-color: #FCFCFC;border: 1px solid #DEDEDE;}
+.btn-oauth:hover{color: #333;background-color: #E8E8E8;border-color: #ccc;-moz-box-shadow: 0 2px 1px rgba(0,0,0,0.1);-webkit-box-shadow: 0 2px 1px rgba(0, 0, 0, 0.1);box-shadow: 0 2px 1px rgba(0, 0, 0, 0.1);}
+.btn-oauth .icon{font-size: 40px;position: absolute;left: 75px; text-shadow:none;}
+.btn-oauth .icon:before{display: none;}
+
+a .icon-qq, a .icon-sina{ margin-bottom: -15px; display: inline-block; width: 48px; height: 48px; margin-right: 10px; background: url('theme/default/images/main/socialicons.png') left top no-repeat;}
+a .icon-sina{background-position: 0 -48px;}
+
+#adminLogin { max-width: 500px; margin: 8% auto; padding: 0; background-color: #FFF; border: 1px solid #DDD; box-shadow: 0px 2px 20px rgba(0, 0, 0, 0.2);border-radius: 6px;}
+#responser { line-height: 30px; font-size: 12px }
+#logo { margin-bottom: 10px; }
+#adminLogin #siteName {padding: 15px 20px 15px; background: #EDF3FE; border-bottom: 1px solid #e5e5e5; border-radius: 6px 6px 0 0}
+#adminLogin #ajaxForm {padding: 20px 20px;}
+#adminLogin #submit {min-width: 100px;}
+
+@media (max-width: 700px){ #adminLogin{border: none;margin: 0 auto;box-shadow: none;padding: 20px 15px;background-color: #fff; margin: 0 auto; border-radius: 0} body {padding: 0;} .container {padding: 0;} #adminLogin #siteName {background: #fff}}
+@media (max-width: 767px) {#login .panel {margin: 20px auto; width: 100%;} #login .panel-heading {padding: 0 0 10px 0;} #login .panel-body {padding: 10px 0; min-height: inherit;} .btn-oauth {padding-left: 80px;} .btn-oauth .icon {left: 20px;}}
+
+#siteName{font-size:14px; color:#444; font-weight:600; display:block;}
+hr{margin-top:8px;}
+#adminLogin .dropdown-menu {min-width:80px;width:80px;}
+</style><link rel='icon' href='/favicon.ico' type='image/x-icon' />
+<link rel='shortcut icon' href='/favicon.ico' type='image/x-icon' />
+<link href='/admin.php?m=rss&f=index&t=xml' title='蝉知企业门户' type='application/rss+xml' rel='alternate' />  <!--[if lt IE 9]>
+  <script src='/js/chanzhi.all.ie8.js?v=7.7' type='text/javascript'></script>
+  <![endif]-->
+  <!--[if lt IE 10]>
+  <script src='/js/chanzhi.all.ie9.js?v=7.7' type='text/javascript'></script>
+  <![endif]-->
+  <script>if(typeof(v) != "object") v = {};v.lang = {"confirmDelete":"\u60a8\u786e\u5b9a\u8981\u6267\u884c\u5220\u9664\u64cd\u4f5c\u5417\uff1f","deleteing":"\u5220\u9664\u4e2d","doing":"\u5904\u7406\u4e2d","loading":"\u52a0\u8f7d\u4e2d","updating":"\u66f4\u65b0\u4e2d...","timeout":"\u7f51\u7edc\u8d85\u65f6,\u8bf7\u91cd\u8bd5","errorThrown":"<h4>\u6267\u884c\u51fa\u9519\uff1a<\/h4>","continueShopping":"\u7ee7\u7eed\u8d2d\u7269","required":"\u5fc5\u586b","back":"\u8fd4\u56de","continue":"\u7ee7\u7eed","bindWechatTip":"\u53d1\u5e16\u529f\u80fd\u8bbe\u7f6e\u4e86\u7ed1\u5b9a\u5fae\u4fe1\u7684\u9650\u5236\uff0c\u8bf7\u5148\u7ed1\u5b9a\u5fae\u4fe1\u4f1a\u5458\u3002"};</script>
+</head>
+<body>
+<script src='/js/fingerprint/fingerprint.js?v=7.7' type='text/javascript'></script>
+<script src='/js/md5.js?v=7.7' type='text/javascript'></script>
+<script>v.scriptName = "\/admin.php";</script>
+<script>v.random = "5eea01c99fdd3012b79d6e4d8a5929c6";</script>
+<div class='container'>
+  <div id='adminLogin'>
+    <div id='siteName'>
+      <h4 class='text-ellipsis text-rightPadding'>
+        蝉知企业门户      </h4>
+      <div class='pull-right'>
+        <div class='dropdown' id='langs'>
+          <button class='btn' style='width:81px' data-toggle='dropdown' title='Change Language/更换语言/更換語言'>简体 <span class='caret'></span></button>
+          <ul class='dropdown-menu'>
+                              <li class="">
+            <a href='/admin.php?m=admin&f=switchlang&lang=zh-tw' >繁體</a>
+          </li>
+                    <li class="">
+            <a href='/admin.php?m=admin&f=switchlang&lang=en' >English</a>
+          </li>
+                    </ul>
+        </div>
+      </div>
+    </div>
+    <form method='post' id='ajaxForm' data-checkfingerprint='1'>
+      <div id='formError' class='alert alert-danger hiding'></div>
+      <div class='row'>
+        <div class='col-xs-4 text-center'>
+                <img src='/theme/default/default/images/main/logo.login.admin.png'  />
+                </div>
+        <div class='col-xs-8'>
+          <table class="table table-form">
+            <tr>
+              <th class='w-60px'>用户名</th>
+              <td><input type='text' name='account' id='account' value='' class='form-control' placeholder='请输入用户名或Email' />
+</td>
+            </tr>
+            <tr>
+              <th>密码</th>
+              <td><input type='password' name='password' id='password' value='' class='form-control' placeholder='请输入密码' />
+</td>
+            </tr>
+            <tr>
+              <th><a href='' data-toggle='modal' class='hidden captchaModal'>保存</a>
+</th>
+              <td>
+                 <input type='submit' id='submit' class='btn btn-primary btn' value='登录'  data-loading='稍候...' />               </td>
+            </tr>
+          </table>
+          <input type='hidden' name='referer' id='referer' value=''  />
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+<script>/* Keep session random valid. */
+needPing = true;
+$('#submit').click(function()
+{
+    var password = $('#password').val();
+    var reg = /^\w+((-\w+)|(\.\w+))*\@[A-Za-z0-9]+((\.|-)[A-Za-z0-9]+)*\.[A-Za-z0-9]+$/;
+    if(!reg.test($('#account').val())) password = md5(md5(md5($('#password').val()) + $('#account').val()) + v.random);
+
+    fingerprint = getFingerprint();
+    loginURL = createLink('user', 'login');
+    $.ajax(
+    {
+        type: "POST",
+        data:"account=" + $('#account').val() + '&password=' + password + '&referer=' + encodeURIComponent($('#referer').val()) + '&fingerprint=' + fingerprint,
+        url:loginURL,
+        dataType:'json',
+        success:function(data)
+        {
+            if(data.result == 'success') return location.href=data.locate;
+            $.ajax(
+            {
+                type: "POST",
+                data: "account=" + $('#account').val() + '&password=' + $('#password').val() + '&referer=' + encodeURIComponent($('#referer').val()) + '&fingerprint=' + fingerprint,
+                url:loginURL,
+                dataType:'json',
+                success:function(data)
+                {
+                    if(data.reason == 'captcha')
+                    {
+                        $('.captchaModal').prop('href', data.url);
+                        setTimeout(function(){$('.captchaModal').click();}, 1000);
+                    }
+                    if(data.result == 'fail') showFormError(data.message);
+                    if(data.result == 'success') location.href=data.locate;
+                    if(typeof(data) != 'object') showFormError(data);
+                },
+                error:function(data){showFormError(data.responseText);}
+            })
+        },
+        error:function(data){showFormError(data.responseText);}
+    })
+    return false;
+});
+
+function showFormError(text)
+{
+    if(text == '') return true;
+    var error = $('#formError').text(text);
+    var parent = error.closest('.form-group');
+    if(parent.length) parent.show();
+    else $('#formError').show();
+}
+
+</script>
+<style>
+  #siteName{position:relative;}
+  .text-rightPadding{padding-right:80px;}
+  .pull-right{position:absolute;top:16px;right:20px;}
+</style>
+</body>
+</html>

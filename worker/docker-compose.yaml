@@ -1,0 +1,7 @@
+services:
+  worker:
+    build:
+      context: ..
+      dockerfile: worker/Dockerfile
+    image: kali-ctf:latest
+    # Used only for building; actual runs are via `docker run` from solver

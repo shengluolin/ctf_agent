@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>BUUCTF在线评测</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="keywords" content="CTF训练平台,BUUCTF,CTF,CTFd,CTF Training,CTF如何打,CTF选手,信息安全,网络安全,Cyber Security,黑客,Hacker">
+	<meta name="description" content="BUUCTF 是一个 CTF 竞赛和训练平台，为各位 CTF 选手提供真实赛题在线复现等服务。">
+	<link rel="shortcut icon" href="/themes/buu_core/static/img/favicon.ico"
+		  type="image/x-icon">
+	<link rel="stylesheet" href="/themes/buu_core/static/css/vendor/bootstrap.min.css">
+	<link rel="stylesheet" href="/themes/buu_core/static/css/vendor/font-awesome/fontawesome-fonts.css?v=3" type='text/css'>
+	<link rel="stylesheet" href="/themes/buu_core/static/css/vendor/font-awesome/fontawesome-all.min.css" type='text/css'>
+	<link rel="stylesheet" href="/themes/buu_core/static/css/vendor/font.css?v=2" type='text/css'>
+	<link rel="stylesheet" href="/themes/buu_core/static/css/jumbotron.css">
+	<link rel="stylesheet" href="/themes/buu_core/static/css/sticky-footer.css">
+	<link rel="stylesheet" href="/themes/buu_core/static/css/base.css?v=29">
+	<link rel="stylesheet" href="/themes/buu_core/static/css/need_translate.css?v=29">
+	<link rel="stylesheet" href="/themes/buu_core/static/css/vendor/icomoon/icomoon.css?v=30">
+	<link rel="stylesheet" href="/themes/buu_core/static/vendor/bootstrap4-toggle/css/bootstrap4-toggle.min.css">
+	<link rel="stylesheet" href="/themes/buu_core/static/vendor/status-indicator/styles.css">
+	<script type="text/javascript">
+		LANG = "en";
+	</script>
+	
+	
+	<link rel="stylesheet" type="text/css" href="/static/user.css">
+	<!-- <script src="/themes/buu_core/static/js/translate.js?v=9"></script> -->
+	<script src="/lang/en/translate.js?v=26"></script>
+	<script src="/themes/buu_core/static/js/need_translate.js?v=5" defer="defer"></script>
+	<script src="/themes/buu_core/static/js/vendor/promise-polyfill.min.js?v=2"></script>
+	<script src="/themes/buu_core/static/js/vendor/eventsource.min.js?v=2"></script>
+	<script src="/themes/buu_core/static/js/vendor/fetch.min.js?v=2"></script>
+	<script src="/themes/buu_core/static/js/CTFd.js?v=4"></script>
+	<script src="/themes/buu_core/static/js/vendor/moment-with-locales.min.js?v=2"></script>
+	<script src="/themes/buu_core/static/js/moment-locale-set.js?v=6"></script>
+	<script src="/themes/buu_core/static/js/vendor/nunjucks.min.js?v=2"></script>
+	<script type="text/javascript">
+		var script_root = "";
+		var csrf_nonce = "f5e28a018c541e69c72c273af0685d589e4dc18877f18e3703b33ec5cfc61dad";
+		var user_mode = "users";
+		var ctf_start = null;
+		var ctf_end = null;
+		CTFd.options.urlRoot = script_root;
+		CTFd.options.csrfNonce = csrf_nonce;
+		CTFd.options.start = ctf_start;
+		CTFd.options.end = ctf_end;
+	</script>
+	<style>
+		.jumbotron {
+			background-color: #3f51b5;
+			color: #fff;
+			border-radius: 0;
+			text-align: center;
+			background: url("https://img.buuoj.cn/2022/img.php?page=d0469bd82cff2a0f074efb9cec5d3079") center center no-repeat;
+			background-size: cover;
+			background-position: right;
+		}
+	</style>
+</head>
+<body>
+	<nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
+		<div class="container">
+			<a href="/" class="navbar-brand">
+				
+				BUUCTF
+				
+			</a>
+			<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#base-navbars"
+					aria-controls="base-navbars" aria-expanded="false" aria-label="Toggle navigation">
+				<span class="navbar-toggler-icon"></span>
+			</button>
+			<div class="collapse navbar-collapse" id="base-navbars">
+				<ul class="navbar-nav mr-auto">
+					
+						
+							<li class="nav-item">
+								<a class="nav-link need-translate" href="/faq">FAQ</a>
+							</li>
+						
+					
+						
+							<li class="nav-item">
+								<a class="nav-link need-translate" href="/match/matches">Matches</a>
+							</li>
+						
+					
+
+					<li class="nav-item dropdown">
+						<a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown" role="button"
+							 aria-haspopup="true" aria-expanded="true">Links</a>
+						<div class="dropdown-menu">
+							<a class="dropdown-item" href="/links">Links</a>
+							<a class="dropdown-item" href="/resources">Resources</a>
+							<a class="dropdown-item" href="/license">License</a>
+							<a class="dropdown-item" href="/contact">Contact US</a>
+							<hr>
+							<a class="dropdown-item" href="https://www.ctfwp.com/">CTFWP</a>
+							<a class="dropdown-item" href="https://love.dasctf.com//#/user/register?invitecode=780JPB">DASCTF 征题平台</a>
+						</div>
+					</li>
+
+					<li class="nav-item">
+						<a class="nav-link" href="/notifications">Notifications</a>
+					</li>
+					
+						<li class="nav-item">
+							<a class="nav-link" href="/users">Users</a>
+						</li>
+						
+					
+					
+						<li class="nav-item dropdown">
+							<a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown" role="button"
+							   aria-haspopup="true" aria-expanded="true">Scoreboard</a>
+							<div class="dropdown-menu">
+								<a class="dropdown-item" href="/scoreboard">Single Scoreboard</a>
+								<a class="dropdown-item" href="/plugins/affiliation/affiliations">Affiliations Scoreboard</a>
+								<a class="dropdown-item" href="/plugins/ctfd_scoreplus/categories	">Score Center</a>
+							</div>
+						</li>
+					
+
+					<li class="nav-item dropdown">
+						<a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown" role="button"
+							 aria-haspopup="true" aria-expanded="true">Challenges</a>
+						<div class="dropdown-menu">
+							<a class="dropdown-item" href="/challenges">Challenges</a>
+							<a class="dropdown-item" href="/plugins/new-challenges/challenges">New Challenges</a>
+							<a class="dropdown-item" href="/plugins/new-challenges/solves">New Solves</a>
+							<a class="dropdown-item" href="/situation">Situation</a>
+						</div>
+					</li>
+				</ul>
+
+				<hr class="d-sm-flex d-md-flex d-lg-none">
+
+				<ul class="navbar-nav ml-md-auto d-block d-sm-flex d-md-flex">
+					<li class="nav-item">
+						<a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown" role="button"
+							 aria-haspopup="true" aria-expanded="true">语言</a>
+						<div class="dropdown-menu" style="left: auto">
+							<a class="dropdown-item" href="/lang/en?next=https%3A%2F%2Fbuuoj.cn%2Fchallenges%2F140">English</a>
+							<a class="dropdown-item" href="/lang/zh?next=https%3A%2F%2Fbuuoj.cn%2Fchallenges%2F140">简体中文</a>
+						</div>
+					</li>
+					
+						
+						
+						<li class="nav-item">
+							<a class="nav-link" href="/user">Profile</a>
+						</li>
+						<li class="nav-item">
+							<a class="nav-link" href="/settings">Settings</a>
+						</li>
+						<li class="nav-item">
+							<a class="nav-link" href="/logout">Logout</a>
+						</li>
+					
+				</ul>
+			</div>
+		</div>
+	</nav>
+
+	<main role="main">
+		
+
+<div class="container">
+	<div class="row">
+		<div class="col-md-12">
+			<h1 class="text-center">404</h1>
+			<h2 class="text-center">Whoops, looks like we can't find that.</h2>
+			<h2 class="text-center">Sorry about that</h2>
+		</div>
+	</div>
+</div>
+
+
+
+	</main>
+
+	<footer class="footer">
+		<div class="container text-center">
+			<a href="http://beian.miit.gov.cn/publish/query/indexFirst.action">
+				<small class="text-muted">桂ICP备14004370号-7</small>
+			</a>
+			&nbsp;&nbsp;|&nbsp;&nbsp;
+			<a target="_blank" href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=45032302000077">
+				<small class="text-muted"><img src="/themes/buu_core/static/img/beian.png"/>桂公网安备 45032302000077号</small>
+			</a>
+			&nbsp;&nbsp;|&nbsp;&nbsp;
+			<a target="_blank" href='https://it.buu.edu.cn/'>
+				<small class="text-muted">北京联合大学 智慧城市学院</small>
+			</a>
+			&nbsp;&nbsp;|&nbsp;&nbsp;
+			<a target="_blank" href='https://www.dbappsecurity.com.cn/'>
+				<small class="text-muted">DBAPPSecurity</small>
+			</a>
+			&nbsp;&nbsp;|&nbsp;&nbsp;
+			<!--<a target="_blank" href='https://www.zhaoj.in/support-me'>-->
+			<!--    <small class="text-muted">Support Me!</small>-->
+			<!--</a>-->
+			<!--&nbsp;&nbsp;|&nbsp;&nbsp;-->
+			<!--<a target="_blank" href='https://www.dbappsecurity.com.cn/'>-->
+			<!--	<small class="text-muted">DBAPPSecurity</small>-->
+			<!--</a>-->
+			<a target="_blank" href='https://buuoj.cn/contact'>
+			    <small class="text-muted">QQ Group && QQ Channel</small>
+			</a>
+			<!-- <script type="text/javascript">document.write(unescape("%3Cspan style='display:none;' id='cnzz_stat_icon_1279426740'%3E%3C/span%3E%3Cscript src='https://s9.cnzz.com/z_stat.php%3Fid%3D1279426740%26online%3D2' type='text/javascript'%3E%3C/script%3E"));</script> -->
+		</div>
+	</footer>
+
+	<script src="/themes/buu_core/static/js/vendor/jquery.min.js?v=2"></script>
+	<script src="/themes/buu_core/static/js/vendor/markdown-it.min.js?v=2"></script>
+	<script src="/themes/buu_core/static/js/vendor/bootstrap.bundle.min.js?v=2"></script>
+	<script src="/themes/buu_core/static/js/vendor/howler.min.js?v=2"></script>
+	<script src="/themes/buu_core/static/js/vendor/window-controller.js?v=2"></script>
+	<script src="/themes/buu_core/static/js/style.js?v=2"></script>
+	<script src="/themes/buu_core/static/js/utils.js?v=2"></script>
+	<script src="/themes/buu_core/static/js/ezq.js?v=2"></script>
+	<!-- <script src="/themes/buu_core/static/js/need_translate.js?v=4"></script> -->
+	<script src="/themes/buu_core/static/vendor/bootstrap4-toggle/js/bootstrap4-toggle.min.js"></script>
+	<!-- <script src="/themes/buu_core/static/js/events.js?v=2"></script> -->
+	
+
+
+	
+	
+	<!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7953221855136420"
+     crossorigin="anonymous"></script> -->
+</body>
+</html>

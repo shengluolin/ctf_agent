@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+        integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+
+    <title>Pickle Store</title>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Mateusz's Pickle Store</h1>
+        <h4>Your funds: $500</h4>
+        <div class="row">
+            
+            <div class="col">
+                <div class="card">
+                    <img src="/static/standard_pickle.jpg" class="card-img-top">
+                    <div class="card-body">
+                        <h5 class="card-title">Standard Pickle</h5>
+                        <div class="card-text">
+                            <p>The classic pickle you know and love.</p>
+                            <p>Price: $10</p>
+                        </div>
+                        <form action="/buy" method="POST">
+                            <input type="hidden" class="form-control" name="id" value="0">
+                            <button type="submit" class="btn btn-primary">Buy</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col">
+                <div class="card">
+                    <img src="/static/smorgasgurka.jpg" class="card-img-top">
+                    <div class="card-body">
+                        <h5 class="card-title">Smörgåsgurka</h5>
+                        <div class="card-text">
+                            <p>Smörgåsgurka, great for a sandwitch!</p>
+                            <p>Price: $100</p>
+                        </div>
+                        <form action="/buy" method="POST">
+                            <input type="hidden" class="form-control" name="id" value="1">
+                            <button type="submit" class="btn btn-primary">Buy</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col">
+                <div class="card">
+                    <img src="/static/flag_pickle.jpg" class="card-img-top">
+                    <div class="card-body">
+                        <h5 class="card-title">Flag Pickle</h5>
+                        <div class="card-text">
+                            <p>The flag Pickle you have always wanted!</p>
+                            <p>Price: $1000</p>
+                        </div>
+                        <form action="/buy" method="POST">
+                            <input type="hidden" class="form-control" name="id" value="2">
+                            <button type="submit" class="btn btn-primary">Buy</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+
+        <h5 class="mt-3">Inventory:</h5>
+        <ul class="list-group mt-2">
+            
+        </ul>
+    </div>
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
+        integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+        integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+        crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"
+        integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
+        crossorigin="anonymous"></script>
+</body>
+
+</html>

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Avatar Uploader</title>
+    <style>
+/* common.css */
+body {
+  width: 100%;
+  max-width: 40rem;
+  margin: 1rem auto;
+  font-family: "Consolas", monospace;
+}
+
+main {
+  margin-top: .75rem;
+}
+
+h1, h2 {
+  margin: 0;
+}
+
+input[type=text] {
+  padding: .25rem;
+}
+
+/* alert */
+.info {
+  padding: .75rem;
+  color: black;
+  background: #9fbff2;
+  border: 2px solid #76a6f2;
+}
+
+.error {
+  padding: .75rem;
+  color: black;
+  background: #f29fbf;
+  border: 2px solid #ef77a6;
+}
+
+/* navbar */
+.mr-auto {
+  margin-right: auto !important;
+}
+
+.navbar {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.navbar ul {
+  display: flex;
+  margin: 0;
+  padding: 0;
+}
+
+.navbar li {
+  list-style: none;
+  padding: .75rem 0;
+}
+
+.navbar a {
+  text-decoration: none;
+  padding: .75rem;
+}
+
+.navbar img {
+  vertical-align: middle;
+}
+/* light/dark.css */
+body {
+  background: white;
+  color: black;
+}
+
+a {
+  color: gray;
+}
+
+a:hover {
+  color: black;
+}
+/**/
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Avatar Uploader</h1>
+      <nav class="navbar">
+        <ul class="mr-auto">
+          <li><a href="/">Home</a></li>
+          <li><a href="theme.php">Toggle theme</a></li>
+        </ul>
+      </nav>
+    </header>
+    <main>
+      <h2>Sign in</h2>
+      <form action="signin.php" method="POST">
+        <p><label for="name">Name: </label><input type="text" name="name" id="name" pattern="^[0-9A-Za-z_]{4,16}$" placeholder="e.g. tateishi_shima"></p>
+        <input type="submit" value="Sign in"> 
+      </form>
+    </main>
+  </body>
+</html>

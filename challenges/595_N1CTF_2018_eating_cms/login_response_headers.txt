@@ -1,0 +1,16 @@
+HTTP/1.1 302 Found
+Content-Length: 155
+Cache-Control: no-store, no-cache, must-revalidate, post-check=0, pre-check=0
+Cache-Control: no-cache
+Connection: keep-alive
+Content-Type: text/html
+Date: Thu, 07 May 2026 04:30:57 GMT
+Expires: Thu, 19 Nov 1981 08:52:00 GMT
+Keep-Alive: timeout=60
+Location: index.php
+Pragma: no-cache
+Proxy-Connection: keep-alive
+Server: openresty
+Set-Cookie: PHPSESSID=patn8dvmfmddntr9droaj3e1t4; path=/
+X-Powered-By: PHP/5.5.9-1ubuntu4.11
+

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><!--Ah,really important,seriously. -->
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unicorn shop</title>
+<!-- Don't be frustrated by the same view,we've changed the challenge content.-->
+<!-- Bootstrap core CSS -->
+<link href="/static/css/bootstrap.min.css?v=ec3bb52a00e176a7181d454dffaea219" rel="stylesheet">
+<!-- Custom styles for this template -->
+<link href="/static/css/jumbotron-narrow.css?v=166844ff66a82256d62737c8a6fc14bf" rel="stylesheet">
+</head>
+<!--We still have some surprise for admin.password-->
+<body>
+<div class="container">
+
+
+
+
+
+
+
+<div class="row marketing">
+<img src="static/timg.jpg" class="img-thumbnail">
+<div class="alert alert-success alert-dismissable">
+Welcome to the Unicorn shop.<br/>
+"Money has never made man happy,nor will it;there is nothing in its nature to produce happiness.The more of it
+one has the more one wants."--Benjamin Franklin
+</div>
+<div class="commodity-list">
+<table class="table">
+<tr>
+<th>Item ID</th>
+<th>Price</th>
+<th>English</th>
+<th>Spanish</th>
+<th>German</th>
+<th>Russian</th>
+</tr>
+
+<tr>
+<td>1</td>
+<td>2.0</td>
+<td>black and white unicorn</td>
+<td>unicornio blanco y negro</td>
+<td>Schwarzweiss-Einhorn</td>
+<td>черно-белый единорог</td>
+</tr>
+
+<tr>
+<td>2</td>
+<td>5.0</td>
+<td>unicorn family</td>
+<td>familia unicornio</td>
+<td>Einhorn-Familie</td>
+<td>семья единорога</td>
+</tr>
+
+<tr>
+<td>3</td>
+<td>8.0</td>
+<td>warrior unicorn</td>
+<td>guerrero unicornio</td>
+<td>Krieger Einhorn</td>
+<td>воин единорог</td>
+</tr>
+
+<tr>
+<td>4</td>
+<td>1337.0</td>
+<td>ultra unicorn</td>
+<td>ultra unicornio</td>
+<td>ultra Einhorn</td>
+<td>ультра единорог</td>
+</tr>
+
+</table>
+</div>
+<label>Purchase Unicorn</label>
+<form class="form-inline" role="form" action="/charge" method="post">
+<div class="form-group">
+<label class="sr-only" for="name">Item ID</label>
+<input type="text" class="form-control" id="id" name="id" placeholder="Item ID">
+</div>
+<div class="form-group">
+<label class="sr-only" for="name">Price</label>
+<input type="text" class="form-control" id="name" name="price" placeholder="Price">
+</div>
+<button type="submit" class="btn btn-default">Purchase!</button>
+</form>
+</div>
+
+</div> <!-- /container -->
+</body>
+</html>

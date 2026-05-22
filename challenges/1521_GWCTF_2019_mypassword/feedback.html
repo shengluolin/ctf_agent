@@ -1,0 +1,61 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+	<link rel="stylesheet" type="text/css" href="./css/bootstrap.min.css">
+	<style>
+		.row-middle{
+			margin-top: 200px;
+		}
+		.container-middle{
+			margin-top: 75px;
+		}
+	</style>
+</head>
+<body>
+	<nav class="navbar navbar-inverse navbar-fixed-top">
+		<div class="container">
+			<div class="navbar-header">
+				<a class="navbar-brand" href="#">GWHT</a>
+			</div>
+			<div id="navbar" class="collapse navbar-collapse">
+				<ul class="nav navbar-nav">					<li><a href="index.php">Index</a></li>
+					<li class="active"><a href="feedback.php">Feedback</a></li>
+					<li><a href="list.php">List</a></li>
+					<li><a href="logout.php">Logout</a></li>
+					
+				</ul>
+			</div>
+		</div>
+	</nav>
+	<div class="container container-middle">
+		<div class="starter-template">
+			<p class="lead">网站还在开发中，有什么建议请多多提出</p>
+			<!-- 
+			if(is_array($feedback)){
+				echo "<script>alert('反馈不合法');</script>";
+				return false;
+			}
+			$blacklist = ['_','\'','&','\\','#','%','input','script','iframe','host','onload','onerror','srcdoc','location','svg','form','img','src','getElement','document','cookie'];
+			foreach ($blacklist as $val) {
+		        while(true){
+		            if(stripos($feedback,$val) !== false){
+		                $feedback = str_ireplace($val,"",$feedback);
+		            }else{
+		                break;
+		            }
+		        }
+		    }
+		    -->
+		</div>
+		<form role="form" action="feedback.php" method="POST">
+			<div class="form-group">
+				<label for="name">反馈</label>
+				<textarea class="form-control" rows="15" name="feedback"></textarea>
+				<br>
+				<button type="submit" class="btn btn-info btn-block btn-lg">提交</button>
+			</div>
+		</form>
+	</div>
+</body>
+</html>

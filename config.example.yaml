@@ -1,0 +1,23 @@
+buuctf:
+  base_url: "https://buuoj.cn"
+  cookie: "YOUR_COOKIE_HERE"
+  csrf_token: "YOUR_CSRF_TOKEN_HERE"
+
+driver:
+  type: "claude_cli"
+  timeout: 3600
+  docker_image: "kali-ctf:latest"
+  allowed_tools:
+    - "Bash"
+
+retry:
+  max_container_retries: 2
+  container_retry_delay: 60
+  inter_challenge_delay: 60
+
+paths:
+  base_dir: "."
+  challenges_dir: "challenges"
+  wps_dir: "wps"
+  logs_dir: "logs"
+  progress_file: "progress.json"

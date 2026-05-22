@@ -1,0 +1,67 @@
+{
+  "703": {
+    "status": "failed",
+    "timestamp": "2026-05-21T19:05:53.631243",
+    "attempts": 6
+  },
+  "154": {
+    "status": "solved",
+    "timestamp": "2026-05-22T04:05:29.802712",
+    "attempts": 11
+  },
+  "142": {
+    "status": "solved",
+    "timestamp": "2026-05-21T20:47:55.171868",
+    "attempts": 1
+  },
+  "914": {
+    "status": "failed",
+    "timestamp": "2026-05-22T15:16:19.165302",
+    "attempts": 5
+  },
+  "915": {
+    "status": "solved",
+    "timestamp": "2026-05-22T10:05:59.267466",
+    "attempts": 3
+  },
+  "701": {
+    "status": "failed",
+    "timestamp": "2026-05-22T15:33:53.171655",
+    "attempts": 4
+  },
+  "140": {
+    "status": "solved",
+    "timestamp": "2026-05-22T06:49:54.173297",
+    "attempts": 1
+  },
+  "551": {
+    "status": "failed",
+    "timestamp": "2026-05-22T10:27:20.839540",
+    "attempts": 2
+  },
+  "567": {
+    "status": "failed",
+    "timestamp": "2026-05-22T10:36:31.701382",
+    "attempts": 1
+  },
+  "597": {
+    "status": "failed",
+    "timestamp": "2026-05-22T10:51:36.580622",
+    "attempts": 1
+  },
+  "710": {
+    "status": "failed",
+    "timestamp": "2026-05-22T11:06:26.281096",
+    "attempts": 1
+  },
+  "1896": {
+    "status": "failed",
+    "timestamp": "2026-05-22T11:10:43.952049",
+    "attempts": 1
+  },
+  "2319": {
+    "status": "failed",
+    "timestamp": "2026-05-22T11:12:27.198832",
+    "attempts": 1
+  }
+}

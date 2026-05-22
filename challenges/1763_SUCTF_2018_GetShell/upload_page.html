@@ -1,0 +1,28 @@
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>can you upload shell?</title>
+</head>
+<body>
+	<center>
+	<p>can you upload a shell?</P>
+    <form action="index.php?act=upload" method="post"
+        enctype="multipart/form-data">
+        <label for="file">文件名:</label>
+        <input type="file" name="file" id="file" />
+        <input type="submit" name="submit" value="提交" />
+    </form>
+	</center>
+</body>
+</html>
+
+<!-- Source code revealed:
+if($contents=file_get_contents($_FILES["file"]["tmp_name"])){
+    $data=substr($contents,5);
+    foreach ($black_char as $b) {
+        if (stripos($data, $b) !== false){
+            die("illegal char");
+        }
+    }
+}
+-->

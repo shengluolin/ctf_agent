@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CTF Agent Dashboard</title>
+    <script src="/static/vendor/alpine.min.js" defer></script>
+    <style>
+        :root {
+            --bg-deep: #080c14;
+            --bg-base: #0d1117;
+            --bg-raised: #161b22;
+            --bg-surface: #1c2333;
+            --border: #21262d;
+            --border-bright: #30363d;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-tertiary: #484f58;
+            --accent-cyan: #00d4ff;
+            --accent-green: #00ff88;
+            --accent-red: #ff4757;
+            --accent-amber: #ffa502;
+            --accent-purple: #b388ff;
+            --font-mono: 'Cascadia Code', 'SF Mono', 'Fira Code', Consolas, 'Liberation Mono', monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-deep);
+            background-image:
+                radial-gradient(ellipse at 20% 50%, rgba(0,212,255,0.03) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(0,255,136,0.02) 0%, transparent 50%);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-deep); }
+        ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+
+        /* Header */
+        .header-bar {
+            background: var(--bg-raised);
+            border-bottom: 1px solid var(--border);
+            padding: 0 24px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header-title {
+            font-family: var(--font-mono);
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .header-title::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            animation: pulse-dot 2s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; box-shadow: 0 0 6px rgba(0,255,136,0.6); }
+            50% { opacity: 0.4; box-shadow: 0 0 2px rgba(0,255,136,0.2); }
+        }
+        .header-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+            opacity: 0.25;
+        }
+
+        /* HUD Stats */
+        .hud-stats { display: flex; gap: 8px; }
+        .hud-stat {
+            text-align: center;
+            padding: 4px 14px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+        .hud-stat::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+        }
+        .hud-stat-num {
+            font-family: var(--font-mono);
+            font-size: 20px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+        .hud-stat-label {
+            font-family: var(--font-mono);
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--text-tertiary);
+        }
+        .hud-stat-green::before { background: var(--accent-green); }
+        .hud-stat-green .hud-stat-num { color: var(--accent-green); }
+        .hud-stat-red::before { background: var(--accent-red); }
+        .hud-stat-red .hud-stat-num { color: var(--accent-red); }
+        .hud-stat-amber::before { background: var(--accent-amber); }
+        .hud-stat-amber .hud-stat-num { color: var(--accent-amber); }
+        .hud-stat-cyan::before { background: var(--accent-cyan); }
+        .hud-stat-cyan .hud-stat-num { color: var(--accent-cyan); }
+
+        /* Cards */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 16px;
+            padding: 24px;
+        }
+        .card {
+            background: var(--bg-base);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px 18px 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: var(--text-tertiary);
+            border-radius: 8px 8px 0 0;
+        }
+        .card:hover {
+            border-color: var(--border-bright);
+            transform: translateY(-2px);
+        }
+        .card-solving::before { background: var(--accent-cyan); }
+        .card-solving { border-color: rgba(0,212,255,0.3); box-shadow: 0 0 16px rgba(0,212,255,0.08); animation: borderPulse 3s ease-in-out infinite; }
+        .card-solved::before { background: var(--accent-green); }
+        .card-solved { border-color: rgba(0,255,136,0.25); box-shadow: 0 0 16px rgba(0,255,136,0.06); }
+        .card-failed::before, .card-error::before { background: var(--accent-red); }
+        .card-timeout::before { background: var(--accent-amber); }
+        @keyframes borderPulse {
+            0%, 100% { border-color: rgba(0,212,255,0.3); }
+            50% { border-color: rgba(0,212,255,0.6); }
+        }
+
+        .card-top { display: flex; justify-content: space-between; align-items: start; }
+        .card-id { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); }
+        .card-name { font-size: 15px; font-weight: 600; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .card-meta { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+        .card-pill {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: var(--bg-surface);
+            color: var(--text-secondary);
+        }
+        .card-pill-flag { background: rgba(0,255,136,0.1); color: var(--accent-green); }
+        .card-progress {
+            height: 2px;
+            background: var(--bg-surface);
+            border-radius: 1px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        .card-progress-bar {
+            height: 100%;
+            background: var(--accent-cyan);
+            border-radius: 1px;
+            animation: progressIndeterminate 2s ease-in-out infinite;
+        }
+        @keyframes progressIndeterminate {
+            0% { transform: translateX(-100%); width: 40%; }
+            50% { width: 60%; }
+            100% { transform: translateX(250%); width: 40%; }
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 100px 0;
+            color: var(--text-tertiary);
+            font-family: var(--font-mono);
+            font-size: 14px;
+        }
+        .empty-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background: var(--accent-cyan);
+            animation: blink 1s steps(1) infinite;
+            vertical-align: middle;
+            margin-left: 4px;
+        }
+        @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .badge-solved { background: rgba(0,255,136,0.12); color: var(--accent-green); border: 1px solid rgba(0,255,136,0.25); }
+        .badge-solving { background: rgba(0,212,255,0.12); color: var(--accent-cyan); border: 1px solid rgba(0,212,255,0.25); animation: pulse 2s infinite; }
+        .badge-failed, .badge-error { background: rgba(255,71,87,0.12); color: var(--accent-red); border: 1px solid rgba(255,71,87,0.25); }
+        .badge-timeout { background: rgba(255,165,2,0.12); color: var(--accent-amber); border: 1px solid rgba(255,165,2,0.25); }
+        .badge-pending { background: rgba(139,148,158,0.08); color: var(--text-secondary); border: 1px solid rgba(139,148,158,0.2); }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        /* Buttons */
+        .btn { padding: 6px 16px; border-radius: 6px; border: none; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.15s; }
+        .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); font-family: var(--font-mono); font-size: 13px; }
+        .btn-ghost:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+        .btn-primary { background: var(--accent-cyan); color: #000; font-weight: 600; }
+        .btn-primary:hover { background: #33dfff; }
+
+        /* Detail View */
+        .detail-view { padding: 24px; }
+        .detail-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+        .detail-title { font-family: var(--font-mono); font-size: 20px; font-weight: 600; }
+        .detail-duration { font-family: var(--font-mono); font-size: 13px; color: var(--text-secondary); }
+        .detail-flag {
+            font-family: var(--font-mono);
+            font-size: 13px;
+            background: rgba(0,255,136,0.08);
+            border: 1px solid rgba(0,255,136,0.25);
+            border-radius: 4px;
+            padding: 3px 12px;
+            color: var(--accent-green);
+        }
+        .spinner {
+            display: inline-block;
+            width: 14px; height: 14px;
+            border: 2px solid rgba(0,212,255,0.3);
+            border-top-color: var(--accent-cyan);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .detail-body {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 16px;
+            height: calc(100vh - 200px);
+        }
+
+        /* Terminal */
+        .terminal-wrapper {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+        .terminal-bar {
+            background: var(--bg-raised);
+            height: 32px;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .terminal-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .terminal-dot-red { background: #ff5f57; }
+        .terminal-dot-yellow { background: #febc2e; }
+        .terminal-dot-green { background: #28c840; }
+        .terminal-bar-label { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); margin-left: 8px; text-transform: uppercase; letter-spacing: 0.1em; }
+        .terminal {
+            background: #0a0e14;
+            color: #d4d4d4;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            line-height: 1.5;
+            padding: 12px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            flex: 1;
+            min-height: 0;
+            position: relative;
+        }
+        .terminal-solving { box-shadow: inset 0 0 40px rgba(0,212,255,0.02); }
+        .terminal::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0,0,0,0.03) 2px,
+                rgba(0,0,0,0.03) 4px
+            );
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .stdout-cmd { color: var(--accent-cyan); }
+        .stdout-result { color: var(--text-secondary); }
+        .stdout-tool { color: var(--accent-purple); font-weight: 600; }
+        .stdout-flag { color: var(--accent-green); font-weight: 700; text-shadow: 0 0 8px rgba(0,255,136,0.4); }
+        .stdout-found { color: var(--accent-amber); font-weight: 700; }
+        .stdout-error { color: var(--accent-red); }
+
+        /* Sidebar */
+        .sidebar { display: flex; flex-direction: column; min-height: 0; }
+        .tab-group {
+            display: flex;
+            background: var(--bg-surface);
+            border-radius: 6px;
+            padding: 3px;
+            gap: 2px;
+            flex-shrink: 0;
+        }
+        .tab-item {
+            flex: 1;
+            padding: 6px 0;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            transition: all 0.15s;
+        }
+        .tab-item:hover { color: var(--text-primary); }
+        .tab-item-active { background: var(--bg-base); color: var(--text-primary); }
+        .tab-content { flex: 1; overflow-y: auto; padding-top: 12px; }
+
+        /* Fact cards */
+        .fact-card {
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            background: var(--bg-base);
+            border-radius: 6px;
+            border-left: 3px solid var(--text-tertiary);
+        }
+        .fact-flag { border-left-color: var(--accent-green); }
+        .fact-vulnerability { border-left-color: var(--accent-red); }
+        .fact-url { border-left-color: var(--accent-cyan); }
+        .fact-tool_output { border-left-color: var(--accent-purple); }
+        .fact-discovery { border-left-color: var(--accent-amber); }
+        .fact-top { display: flex; justify-content: space-between; align-items: center; }
+        .fact-badge {
+            font-size: 10px;
+            padding: 1px 6px;
+            border-radius: 3px;
+            font-family: var(--font-mono);
+            font-weight: 600;
+        }
+        .fact-badge-flag { background: rgba(0,255,136,0.12); color: var(--accent-green); }
+        .fact-badge-vuln { background: rgba(255,71,87,0.12); color: var(--accent-red); }
+        .fact-badge-other { background: rgba(139,148,158,0.1); color: var(--text-secondary); }
+        .fact-time { font-size: 11px; color: var(--text-tertiary); font-family: var(--font-mono); }
+        .fact-content { margin-top: 6px; font-family: var(--font-mono); font-size: 13px; word-break: break-all; }
+
+        /* Hint cards */
+        .hint-textarea {
+            background: var(--bg-deep);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 13px;
+            width: 100%;
+            resize: none;
+        }
+        .hint-textarea:focus { outline: none; border-color: var(--accent-cyan); }
+        .hint-textarea::placeholder { color: var(--text-tertiary); }
+        .hint-card {
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            background: var(--bg-base);
+            border-radius: 6px;
+            border-left: 3px solid var(--accent-cyan);
+        }
+        .hint-delete {
+            background: none; border: none; color: var(--text-tertiary);
+            cursor: pointer; font-size: 14px; padding: 0 4px; transition: color 0.15s;
+        }
+        .hint-delete:hover { color: var(--accent-red); }
+
+        /* Info tab */
+        .info-grid {
+            padding: 12px;
+            background: var(--bg-base);
+            border-radius: 6px;
+        }
+        .info-row { display: flex; align-items: baseline; margin-bottom: 10px; gap: 8px; }
+        .info-label { font-size: 13px; color: var(--text-tertiary); font-family: var(--font-mono); flex-shrink: 0; }
+        .info-value { font-size: 14px; }
+        .info-error {
+            background: rgba(255,71,87,0.08);
+            border: 1px solid rgba(255,71,87,0.2);
+            border-radius: 4px;
+            padding: 8px 12px;
+            color: var(--accent-red);
+            font-size: 13px;
+            margin-top: 4px;
+        }
+
+        input, textarea { font-family: inherit; }
+    </style>
+</head>
+<body>
+<div x-data="ctfApp()" x-init="init()">
+
+    <!-- Header -->
+    <header class="header-bar">
+        <div class="header-title">CTF AGENT</div>
+        <div class="hud-stats">
+            <div class="hud-stat hud-stat-cyan">
+                <div class="hud-stat-num" x-text="stats.solving"></div>
+                <div class="hud-stat-label">Active</div>
+            </div>
+            <div class="hud-stat hud-stat-green">
+                <div class="hud-stat-num" x-text="stats.solved"></div>
+                <div class="hud-stat-label">Solved</div>
+            </div>
+            <div class="hud-stat hud-stat-red">
+                <div class="hud-stat-num" x-text="stats.failed + stats.error"></div>
+                <div class="hud-stat-label">Failed</div>
+            </div>
+            <div class="hud-stat hud-stat-amber">
+                <div class="hud-stat-num" x-text="stats.timeout"></div>
+                <div class="hud-stat-label">Timeout</div>
+            </div>
+        </div>
+    </header>
+    <div class="header-divider"></div>
+
+    <!-- Dashboard View -->
+    <div x-show="view === 'dashboard'" x-transition.opacity.duration.200ms>
+        <div class="card-grid">
+            <template x-for="c in challenges" :key="c.id">
+                <div class="card" :class="'card-' + c.status" @click="openDetail(c.id)">
+                    <div class="card-top">
+                        <div style="flex: 1; min-width: 0;">
+                            <div class="card-id" x-text="'#' + c.id"></div>
+                            <div class="card-name" x-text="c.name"></div>
+                        </div>
+                        <span class="badge" :class="'badge-' + c.status" x-text="c.status"></span>
+                    </div>
+                    <div class="card-meta">
+                        <span class="card-pill" x-show="c.duration_seconds > 0" x-text="formatDuration(c.duration_seconds)"></span>
+                        <span class="card-pill" x-show="c.facts_count > 0" x-text="c.facts_count + ' facts'"></span>
+                        <span class="card-pill" x-show="c.hints_count > 0" x-text="c.hints_count + ' hints'"></span>
+                        <span class="card-pill card-pill-flag" x-show="c.flag">FLAG</span>
+                    </div>
+                    <div class="card-progress" x-show="c.status === 'solving'">
+                        <div class="card-progress-bar"></div>
+                    </div>
+                </div>
+            </template>
+        </div>
+        <div class="empty-state" x-show="challenges.length === 0">
+            AWAITING CHALLENGES<span class="empty-cursor"></span>
+        </div>
+    </div>
+
+    <!-- Challenge Detail View -->
+    <div x-show="view === 'detail'" x-transition.opacity.duration.200ms>
+        <div class="detail-view">
+            <div style="margin-bottom: 16px;">
+                <button class="btn btn-ghost" @click="closeDetail()">&#8592; BACK</button>
+            </div>
+
+            <template x-if="selectedChallenge">
+                <div>
+                    <div class="detail-header">
+                        <h2 class="detail-title" x-text="'[' + selectedChallenge.id + '] ' + selectedChallenge.name"></h2>
+                        <span class="badge" :class="'badge-' + selectedChallenge.status" x-text="selectedChallenge.status"></span>
+                        <span class="spinner" x-show="selectedChallenge.status === 'solving'"></span>
+                        <span class="detail-duration" x-show="selectedChallenge.duration_seconds > 0" x-text="formatDuration(selectedChallenge.duration_seconds)"></span>
+                        <span class="detail-flag" x-show="selectedChallenge.flag" x-text="selectedChallenge.flag"></span>
+                    </div>
+
+                    <div class="detail-body">
+                        <!-- Left: Terminal -->
+                        <div class="terminal-wrapper">
+                            <div class="terminal-bar">
+                                <span class="terminal-dot terminal-dot-red"></span>
+                                <span class="terminal-dot terminal-dot-yellow"></span>
+                                <span class="terminal-dot terminal-dot-green"></span>
+                                <span class="terminal-bar-label">Live Output</span>
+                            </div>
+                            <div class="terminal" :class="{'terminal-solving': selectedChallenge.status === 'solving'}" x-ref="terminal">
+                                <template x-for="(line, idx) in stdoutLines" :key="idx">
+                                    <div><span class="stdout-line" :class="stdoutClass(line.text)" x-text="line.text"></span></div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Right: Sidebar -->
+                        <div class="sidebar">
+                            <div class="tab-group">
+                                <div class="tab-item" :class="{'tab-item-active': activeTab === 'facts'}" @click="activeTab = 'facts'">Facts</div>
+                                <div class="tab-item" :class="{'tab-item-active': activeTab === 'hints'}" @click="activeTab = 'hints'">Hints</div>
+                                <div class="tab-item" :class="{'tab-item-active': activeTab === 'info'}" @click="activeTab = 'info'">Info</div>
+                            </div>
+                            <div class="tab-content">
+                                <!-- Facts -->
+                                <div x-show="activeTab === 'facts'">
+                                    <template x-for="fact in selectedChallenge.facts" :key="fact.id">
+                                        <div class="fact-card" :class="'fact-' + fact.category">
+                                            <div class="fact-top">
+                                                <span class="fact-badge"
+                                                      :class="fact.category === 'flag_candidate' ? 'fact-badge-flag' : fact.category === 'vulnerability' ? 'fact-badge-vuln' : 'fact-badge-other'"
+                                                      x-text="fact.category"></span>
+                                                <span class="fact-time" x-text="formatTime(fact.created_at)"></span>
+                                            </div>
+                                            <div class="fact-content" x-text="fact.content"></div>
+                                        </div>
+                                    </template>
+                                    <div x-show="selectedChallenge.facts.length === 0" style="color: var(--text-tertiary); text-align: center; padding: 40px; font-family: var(--font-mono); font-size: 13px;">
+                                        NO FACTS DISCOVERED<span class="empty-cursor"></span>
+                                    </div>
+                                </div>
+
+                                <!-- Hints -->
+                                <div x-show="activeTab === 'hints'">
+                                    <div style="margin-bottom: 12px;">
+                                        <textarea class="hint-textarea" x-model="hintInput" rows="3" placeholder="Add a hint to guide the solver..."></textarea>
+                                        <button class="btn btn-primary" style="margin-top: 8px; width: 100%;" @click="addHint()" :disabled="!hintInput.trim()">Add Hint</button>
+                                    </div>
+                                    <template x-for="hint in selectedChallenge.hints" :key="hint.id">
+                                        <div class="hint-card">
+                                            <div style="display: flex; justify-content: space-between; align-items: start;">
+                                                <div style="flex: 1; font-size: 14px;" x-text="hint.content"></div>
+                                                <button class="hint-delete" @click="deleteHint(hint.id)">&#10005;</button>
+                                            </div>
+                                            <div style="display: flex; gap: 8px; margin-top: 4px; font-size: 11px; color: var(--text-tertiary); font-family: var(--font-mono);">
+                                                <span x-text="formatTime(hint.created_at)"></span>
+                                                <span x-show="hint.used_in_attempt" style="color: var(--accent-green);">(used)</span>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+
+                                <!-- Info -->
+                                <div x-show="activeTab === 'info'" style="font-size: 14px;">
+                                    <div class="info-grid">
+                                        <div class="info-row">
+                                            <span class="info-label">STATUS</span>
+                                            <span class="badge" :class="'badge-' + selectedChallenge.status" x-text="selectedChallenge.status"></span>
+                                        </div>
+                                        <div class="info-row" x-show="selectedChallenge.flag">
+                                            <span class="info-label">FLAG</span>
+                                            <span class="detail-flag" x-text="selectedChallenge.flag"></span>
+                                        </div>
+                                        <div x-show="selectedChallenge.error_message">
+                                            <span class="info-label">ERROR</span>
+                                            <div class="info-error" x-text="selectedChallenge.error_message"></div>
+                                        </div>
+                                        <div class="info-row" x-show="selectedChallenge.started_at">
+                                            <span class="info-label">START</span>
+                                            <span class="info-value" x-text="formatTime(selectedChallenge.started_at)"></span>
+                                        </div>
+                                        <div class="info-row" x-show="selectedChallenge.finished_at">
+                                            <span class="info-label">END</span>
+                                            <span class="info-value" x-text="formatTime(selectedChallenge.finished_at)"></span>
+                                        </div>
+                                        <div class="info-row" x-show="selectedChallenge.duration_seconds > 0">
+                                            <span class="info-label">TIME</span>
+                                            <span class="info-value" style="font-family: var(--font-mono);" x-text="formatDuration(selectedChallenge.duration_seconds)"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function ctfApp() {
+    return {
+        view: 'dashboard',
+        challenges: [],
+        selectedChallenge: null,
+        selectedId: null,
+        stdoutLines: [],
+        lastStdoutId: 0,
+        stats: { total: 0, solved: 0, failed: 0, timeout: 0, error: 0, solving: 0, pending: 0 },
+        activeTab: 'facts',
+        hintInput: '',
+        pollTimer: null,
+
+        async init() {
+            await this.loadChallenges();
+            await this.loadStats();
+            this.startPolling();
+        },
+
+        startPolling() {
+            this.pollTimer = setInterval(async () => {
+                if (this.view === 'detail' && this.selectedId) {
+                    await this.loadChallengeDetail(this.selectedId);
+                    await this.pollStdout();
+                } else {
+                    await this.loadChallenges();
+                    await this.loadStats();
+                }
+            }, 3000);
+        },
+
+        async loadChallenges() {
+            try {
+                const resp = await fetch('/api/challenges');
+                this.challenges = await resp.json();
+            } catch (e) {}
+        },
+
+        async loadStats() {
+            try {
+                const resp = await fetch('/api/challenges/stats');
+                this.stats = await resp.json();
+            } catch (e) {}
+        },
+
+        async openDetail(id) {
+            this.selectedId = id;
+            this.stdoutLines = [];
+            this.lastStdoutId = 0;
+            this.activeTab = 'facts';
+            await this.loadChallengeDetail(id);
+            await this.pollStdout();
+            this.view = 'detail';
+        },
+
+        closeDetail() {
+            this.view = 'dashboard';
+            this.selectedId = null;
+            this.selectedChallenge = null;
+            this.stdoutLines = [];
+        },
+
+        async loadChallengeDetail(id) {
+            try {
+                const resp = await fetch('/api/challenges/' + id);
+                this.selectedChallenge = await resp.json();
+            } catch (e) {}
+        },
+
+        async pollStdout() {
+            if (!this.selectedId) return;
+            try {
+                const resp = await fetch('/api/challenges/' + this.selectedId + '/stdout?since_id=' + this.lastStdoutId + '&limit=200');
+                const lines = await resp.json();
+                if (lines.length > 0) {
+                    this.stdoutLines.push(...lines);
+                    this.lastStdoutId = lines[lines.length - 1].id;
+                    this.$nextTick(() => {
+                        const el = this.$refs.terminal;
+                        if (el) el.scrollTop = el.scrollHeight;
+                    });
+                }
+            } catch (e) {}
+        },
+
+        stdoutClass(text) {
+            if (!text) return '';
+            if (text.startsWith('[Tool:')) return 'stdout-tool';
+            if (text.startsWith('  $ ')) return 'stdout-cmd';
+            if (text.startsWith('  ') && !text.startsWith('  ...')) return 'stdout-result';
+            if (text.includes('flag{') || text.includes('FLAG')) return 'stdout-flag';
+            if (text.includes('[FOUND]') || text.includes('[!!!]')) return 'stdout-found';
+            if (text.match(/\b(error|failed|exception)\b/i)) return 'stdout-error';
+            return '';
+        },
+
+        async addHint() {
+            if (!this.hintInput.trim() || !this.selectedId) return;
+            try {
+                await fetch('/api/challenges/' + this.selectedId + '/hints', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: this.hintInput.trim() }),
+                });
+                this.hintInput = '';
+                await this.loadChallengeDetail(this.selectedId);
+            } catch (e) {}
+        },
+
+        async deleteHint(hintId) {
+            try {
+                await fetch('/api/hints/' + hintId, { method: 'DELETE' });
+                await this.loadChallengeDetail(this.selectedId);
+            } catch (e) {}
+        },
+
+        formatDuration(seconds) {
+            if (!seconds) return '';
+            if (seconds < 60) return Math.round(seconds) + 's';
+            if (seconds < 3600) return Math.round(seconds / 60) + 'm ' + Math.round(seconds % 60) + 's';
+            return Math.floor(seconds / 3600) + 'h ' + Math.round((seconds % 3600) / 60) + 'm';
+        },
+
+        formatTime(iso) {
+            if (!iso) return '';
+            const d = new Date(iso + 'Z');
+            return d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        },
+    };
+}
+</script>
+</body>
+</html>
