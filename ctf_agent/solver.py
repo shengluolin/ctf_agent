@@ -168,7 +168,7 @@ def solve_challenge(
             template,
             name=challenge.name,
             url=container_url,
-            cid=challenge.id,
+            cid=str(challenge.id),
             challenge_dir=container_challenge_dir,
             wp_path=container_wp_path,
             cookie=config.buuctf.cookie,
@@ -180,13 +180,10 @@ def solve_challenge(
         if pending_hints:
             hint_lines = "\n".join(f"- {h['content']}" for h in pending_hints)
             prompt += f"\n\n## User Hints (Follow These Closely)\n{hint_lines}\n"
-            web_state.mark_hints_used(
-                [h["id"] for h in pending_hints],
-                attempt=1,
-            )
 
         # Track injected hint IDs to avoid duplicates
         _injected_hint_ids: set[int] = set(h["id"] for h in (pending_hints or []))
+        _hint_ids_to_mark: list[int] = [h["id"] for h in (pending_hints or [])]
 
         # Execute via Docker worker with real-time streaming
         timeout = config.driver.timeout
@@ -216,18 +213,24 @@ def solve_challenge(
 
         def _check_new_hints() -> None:
             """Check for new hints and write them to challenge dir as signal file."""
-            new_hints = web_state.get_pending_hints(challenge.id)
-            fresh = [h for h in new_hints if h["id"] not in _injected_hint_ids]
-            if not fresh:
-                return
-            for h in fresh:
-                _injected_hint_ids.add(h["id"])
-            hint_text = "\n".join(f"- {h['content']}" for h in fresh)
-            signal_file = renew_signal_dir / ".hints_new"
-            existing = signal_file.read_text(encoding="utf-8") if signal_file.exists() else ""
-            signal_file.write_text(existing + "\n" + hint_text, encoding="utf-8")
-            web_state.mark_hints_used([h["id"] for h in fresh], attempt=1)
-            logger.info("[%d] Injected %d new hints via signal file", challenge.id, len(fresh))
+            try:
+                new_hints = web_state.get_pending_hints(challenge.id)
+                fresh = [h for h in new_hints if h["id"] not in _injected_hint_ids]
+                if not fresh:
+                    return
+                for h in fresh:
+                    _injected_hint_ids.add(h["id"])
+                hint_text = "\n".join(f"- {h['content']}" for h in fresh)
+                signal_file = renew_signal_dir / ".hints_new"
+                try:
+                    existing = signal_file.read_text(encoding="utf-8") if signal_file.exists() else ""
+                except FileNotFoundError:
+                    existing = ""
+                signal_file.write_text(existing + "\n" + hint_text, encoding="utf-8")
+                web_state.mark_hints_used([h["id"] for h in fresh], attempt=1)
+                logger.info("[%d] Injected %d new hints via signal file", challenge.id, len(fresh))
+            except Exception as e:
+                logger.warning("[%d] _check_new_hints failed: %s", challenge.id, e)
 
         def _renew_loop():
             while not renew_stop.wait(renew_check_interval):
@@ -254,10 +257,11 @@ def solve_challenge(
             result = driver.execute(prompt, timeout, on_stdout=_on_chunk, workdir=container_challenge_dir)
         finally:
             renew_stop.set()
-            # Clean up signal file
-            signal_file = renew_signal_dir / ".container_renew_ask"
-            if signal_file.exists():
-                signal_file.unlink()
+            # Clean up signal files
+            for name in (".container_renew_ask", ".hints_new"):
+                sf = renew_signal_dir / name
+                if sf.exists():
+                    sf.unlink()
         parser.flush()
 
         elapsed = time.time() - start_time
@@ -274,12 +278,27 @@ def solve_challenge(
                 duration_seconds=elapsed,
             )
 
+        # Mark hints as used after execution completes (regardless of outcome)
+        if _hint_ids_to_mark:
+            web_state.mark_hints_used(_hint_ids_to_mark, attempt=1)
+
         # Parse output — use raw stdout for flag parsing (contains all JSON events)
-        parsed = parse_output(result.stdout or readable_stdout, result.stderr)
+        stdout_for_parsing = result.stdout if result.stdout is not None and result.stdout != "" else readable_stdout
+        parsed = parse_output(stdout_for_parsing, result.stderr)
 
         if parsed.flag:
             # Try to submit flag
             submit_result = client.submit_flag(challenge.id, parsed.flag)
+            # Check for network/API errors first
+            if submit_result.get("error"):
+                logger.error("[%d] Flag submission failed: %s", challenge.id, submit_result["error"])
+                return SolveResult(
+                    challenge_id=challenge.id,
+                    status=SolveStatus.ERROR,
+                    flag=parsed.flag,
+                    error_message=f"Flag submission failed: {submit_result['error']}",
+                    duration_seconds=elapsed,
+                )
             status = submit_result.get("data", {}).get("status")
             if status in ("correct", "already_solved"):
                 logger.info("[%d] Flag correct! %s", challenge.id, parsed.flag)

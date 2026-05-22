@@ -21,7 +21,8 @@ def parse_output(stdout: str, stderr: str = "") -> ParsedOutput:
         return ParsedOutput(writeup=None, flag=_find_flag(stderr), has_frontmatter=False)
 
     # If stdout looks like stream-json, extract text from events first
-    if text.startswith("{") and '"type"' in text[:100]:
+    # Require multiple JSON lines to avoid false positives on model JSON output
+    if text.startswith("{") and '"type"' in text[:100] and text.count("\n") > 1:
         text = _extract_from_stream_json(text) or text
 
     # Strategy 1: Extract YAML frontmatter block

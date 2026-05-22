@@ -24,16 +24,19 @@ _PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     )),
 ]
 
-_MIN_LINE_LENGTH = 10
+_MIN_LINE_LENGTH = 4
 
 
 def process_chunk(challenge_id: int, text: str) -> None:
     for line in text.splitlines():
         line = line.strip()
-        if not line or len(line) < _MIN_LINE_LENGTH:
+        if not line:
             continue
         for category, pattern in _PATTERNS:
             match = pattern.search(line)
             if match:
+                # Skip length check for flag candidates (flags can be short like flag{a})
+                if category != "flag_candidate" and len(line) < _MIN_LINE_LENGTH:
+                    continue
                 state.insert_fact(challenge_id, category, match.group(0), line)
                 break

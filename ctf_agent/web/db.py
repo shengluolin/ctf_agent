@@ -54,9 +54,13 @@ def configure(db_path: str | Path) -> None:
     global _db_path
     _db_path = Path(db_path)
     _db_path.parent.mkdir(parents=True, exist_ok=True)
-    with _connect() as conn:
+    conn = _connect()
+    try:
         conn.executescript(_SCHEMA)
         conn.execute("PRAGMA journal_mode=WAL")
+        conn.commit()
+    finally:
+        conn.close()
 
 
 @contextmanager

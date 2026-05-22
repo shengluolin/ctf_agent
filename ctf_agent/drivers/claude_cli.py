@@ -81,7 +81,8 @@ class ClaudeCliDriver(WorkerDriver):
         on_stdout: Callable[[str], None] | None = None,
         workdir: str | None = None,
     ) -> ExecuteResult:
-        assert self._container is not None
+        if self._container is None:
+            raise RuntimeError("Container not running. Call ensure_running() first.")
         command = [
             "claude",
             "--dangerously-skip-permissions",
@@ -157,7 +158,7 @@ class ClaudeCliDriver(WorkerDriver):
                             on_stdout(so)
                     if se:
                         stderr_chunks.append(se)
-            except DockerException as e:
+            except Exception as e:
                 read_error = str(e)
             finally:
                 _close_stream(stream)
