@@ -13,6 +13,7 @@ from ctf_agent.models import Challenge, SolveResult, SolveStatus
 from ctf_agent.output_parser import parse_output
 from ctf_agent.prompting import load_template, render_template
 from ctf_agent.web import state as web_state
+from ctf_agent.writeup_search import format_writeup_hints, search_writeup
 
 logger = logging.getLogger(__name__)
 
@@ -129,6 +130,7 @@ def solve_challenge(
     client: BuuctfClient,
     driver: ClaudeCliDriver,
     template: str,
+    timeout_override: int | None = None,
 ) -> SolveResult:
     start_time = time.time()
     container_url: str | None = None
@@ -151,6 +153,28 @@ def solve_challenge(
             )
         logger.info("[%d] Challenge URL: %s", challenge.id, container_url)
 
+        # Pre-flight: verify target is reachable
+        import requests as _requests
+        try:
+            probe = _requests.get(container_url, timeout=15, verify=False)
+            logger.info("[%d] Target reachable (HTTP %d)", challenge.id, probe.status_code)
+        except _requests.RequestException as e:
+            logger.warning("[%d] Target not reachable: %s — retrying in 30s", challenge.id, e)
+            time.sleep(30)
+            try:
+                probe = _requests.get(container_url, timeout=15, verify=False)
+                logger.info("[%d] Target reachable on retry (HTTP %d)", challenge.id, probe.status_code)
+            except _requests.RequestException as e2:
+                logger.error("[%d] Target still unreachable: %s", challenge.id, e2)
+                client.destroy_container(challenge.id)
+                container_url = None  # prevent double-destroy in finally
+                return SolveResult(
+                    challenge_id=challenge.id,
+                    status=SolveStatus.ERROR,
+                    error_message=f"Target unreachable: {e2}",
+                    duration_seconds=time.time() - start_time,
+                )
+
         # Ensure host directories exist
         challenge.challenge_dir.mkdir(parents=True, exist_ok=True)
         challenge.writeup_path.parent.mkdir(parents=True, exist_ok=True)
@@ -164,6 +188,8 @@ def solve_challenge(
         container_wp_path = f"{container_wps}/{challenge.writeup_path.name}"
 
         # Render prompt with container paths
+        # Note: do NOT pass cookie/csrf to the prompt — agent should only
+        # attack the challenge target, never the BUUCTF platform itself.
         prompt = render_template(
             template,
             name=challenge.name,
@@ -171,8 +197,6 @@ def solve_challenge(
             cid=str(challenge.id),
             challenge_dir=container_challenge_dir,
             wp_path=container_wp_path,
-            cookie=config.buuctf.cookie,
-            csrf=config.buuctf.csrf_token,
         )
 
         # Inject user hints
@@ -186,7 +210,7 @@ def solve_challenge(
         _hint_ids_to_mark: list[int] = [h["id"] for h in (pending_hints or [])]
 
         # Execute via Docker worker with real-time streaming
-        timeout = config.driver.timeout
+        timeout = timeout_override if timeout_override is not None else config.driver.timeout
         logger.info("[%d] Executing in Docker worker (timeout=%ds)", challenge.id, timeout)
 
         # Start container renewal background thread
@@ -203,16 +227,23 @@ def solve_challenge(
             print(line, flush=True)
             web_state.append_stdout_line(challenge.id, line)
 
+        _last_hint_check: float = 0.0
+        _HINT_CHECK_INTERVAL = 5.0  # seconds between hint DB queries
+
         def _on_chunk(text: str) -> None:
             nonlocal last_activity
             last_activity = time.time()
-            log_chunks.append(text)
             parser.feed(text)
             process_chunk(challenge.id, text)
             _check_new_hints()
 
         def _check_new_hints() -> None:
             """Check for new hints and write them to challenge dir as signal file."""
+            nonlocal _last_hint_check
+            now = time.time()
+            if now - _last_hint_check < _HINT_CHECK_INTERVAL:
+                return
+            _last_hint_check = now
             try:
                 new_hints = web_state.get_pending_hints(challenge.id)
                 fresh = [h for h in new_hints if h["id"] not in _injected_hint_ids]
@@ -221,47 +252,114 @@ def solve_challenge(
                 for h in fresh:
                     _injected_hint_ids.add(h["id"])
                 hint_text = "\n".join(f"- {h['content']}" for h in fresh)
-                signal_file = renew_signal_dir / ".hints_new"
-                try:
-                    existing = signal_file.read_text(encoding="utf-8") if signal_file.exists() else ""
-                except FileNotFoundError:
-                    existing = ""
-                signal_file.write_text(existing + "\n" + hint_text, encoding="utf-8")
+                _append_hints_file(hint_text)
                 web_state.mark_hints_used([h["id"] for h in fresh], attempt=1)
                 logger.info("[%d] Injected %d new hints via signal file", challenge.id, len(fresh))
             except Exception as e:
                 logger.warning("[%d] _check_new_hints failed: %s", challenge.id, e)
 
         def _renew_loop():
-            while not renew_stop.wait(renew_check_interval):
+            import requests as _req
+            check_interval = 5 * 60  # Health check every 5 minutes
+            last_renew = time.time()
+            while not renew_stop.wait(check_interval):
+                # 1. Health check: is the target still reachable?
+                try:
+                    r = _req.get(container_url, timeout=10, verify=False, allow_redirects=True)
+                    alive = r.status_code < 500  # 404 is fine, container is still up
+                except _req.RequestException:
+                    alive = False
+                    logger.warning("[%d] Container health check FAILED (unreachable)", challenge.id)
+
+                # 2. Auto-renew if agent is active (regardless of health check result,
+                #    since the container may briefly flap)
                 idle = time.time() - last_activity
-                if idle < 5 * 60:
-                    # Agent is still active — auto-renew container directly
+                elapsed_since_renew = time.time() - last_renew
+                if idle < 5 * 60 and elapsed_since_renew > 10 * 60:
                     logger.info("[%d] Agent active (idle %.0fs), auto-renewing container", challenge.id, idle)
                     try:
                         ok = client.renew_container(challenge.id)
+                        if ok:
+                            last_renew = time.time()
                         logger.info("[%d] Auto-renew result: %s", challenge.id, ok)
                     except Exception as e:
                         logger.error("[%d] Auto-renew failed: %s", challenge.id, e)
-                else:
-                    logger.info("[%d] Agent idle %.0fs, skipping renewal", challenge.id, idle)
+
+                # 3. If container is dead, try to renew aggressively
+                if not alive:
+                    logger.warning("[%d] Container unreachable, attempting emergency renew", challenge.id)
+                    try:
+                        ok = client.renew_container(challenge.id)
+                        if ok:
+                            last_renew = time.time()
+                            logger.info("[%d] Emergency renew succeeded", challenge.id)
+                            time.sleep(15)  # Wait for container to come up
+                        else:
+                            logger.error("[%d] Emergency renew failed — container may be gone", challenge.id)
+                    except Exception as e:
+                        logger.error("[%d] Emergency renew error: %s", challenge.id, e)
 
         readable_lines: list[str] = []
-        log_chunks: list[str] = []
         parser = _StreamParser(on_line=_on_readable_line)
 
         renew_thread = threading.Thread(target=_renew_loop, daemon=True)
         renew_thread.start()
 
+        # Writeup auto-search background thread
+        _writeup_searched = False
+
+        _hints_file_lock = threading.Lock()
+
+        def _append_hints_file(hint_text: str) -> None:
+            """Thread-safe append to .hints_new signal file."""
+            signal_file = renew_signal_dir / ".hints_new"
+            with _hints_file_lock:
+                try:
+                    existing = signal_file.read_text(encoding="utf-8") if signal_file.exists() else ""
+                except FileNotFoundError:
+                    existing = ""
+                signal_file.write_text(existing + "\n" + hint_text, encoding="utf-8")
+
+        def _writeup_search_loop():
+            nonlocal _writeup_searched
+            delay = config.retry.writeup_search_delay
+            check_interval = 60
+            elapsed = 0
+            while not renew_stop.wait(check_interval):
+                elapsed += check_interval
+                if elapsed >= delay and not _writeup_searched:
+                    logger.info("[%d] Auto-searching writeups after %ds", challenge.id, elapsed)
+                    try:
+                        results = search_writeup(challenge.name)
+                        hint_text = format_writeup_hints(results)
+                        if hint_text:
+                            _append_hints_file(hint_text)
+                            logger.info("[%d] Injected writeup hints from %d sources", challenge.id, len(results))
+                        else:
+                            logger.info("[%d] No useful writeups found", challenge.id)
+                    except Exception as e:
+                        logger.warning("[%d] Writeup search failed: %s", challenge.id, e)
+                        continue  # retry on next check
+                    _writeup_searched = True
+                    break
+
+        writeup_thread = threading.Thread(target=_writeup_search_loop, daemon=True)
+        writeup_thread.start()
+
         try:
             result = driver.execute(prompt, timeout, on_stdout=_on_chunk, workdir=container_challenge_dir)
         finally:
             renew_stop.set()
+            # Wait for writeup thread to finish so it doesn't write after cleanup
+            writeup_thread.join(timeout=10)
             # Clean up signal files
             for name in (".container_renew_ask", ".hints_new"):
                 sf = renew_signal_dir / name
-                if sf.exists():
-                    sf.unlink()
+                try:
+                    if sf.exists():
+                        sf.unlink()
+                except FileNotFoundError:
+                    pass
         parser.flush()
 
         elapsed = time.time() - start_time

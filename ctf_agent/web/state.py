@@ -5,6 +5,22 @@ from ctf_agent.web.db import get_conn
 
 def notify_challenge_start(cid: int, name: str) -> None:
     with get_conn() as conn:
+        # Stale cleanup: mark any leftover "solving" challenges as error
+        # (happens when previous run crashed/timed out without calling notify_challenge_done)
+        conn.execute("""
+            UPDATE challenges SET
+                status = 'error',
+                error_message = 'interrupted (stale solving state)',
+                finished_at = datetime('now')
+            WHERE status = 'solving' AND id != ?
+        """, (cid,))
+        # Clear old stdout and facts from previous attempts
+        conn.execute("DELETE FROM stdout_log WHERE challenge_id = ?", (cid,))
+        conn.execute("DELETE FROM facts WHERE challenge_id = ?", (cid,))
+        # Reset hint usage so hints can be re-injected on retry
+        conn.execute(
+            "UPDATE hints SET used_in_attempt = NULL WHERE challenge_id = ?", (cid,)
+        )
         conn.execute("""
             INSERT INTO challenges (id, name, status, started_at)
             VALUES (?, ?, 'solving', datetime('now'))

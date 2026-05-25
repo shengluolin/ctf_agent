@@ -120,13 +120,26 @@ def main() -> None:
     print(f"=== CTF Agent (Claude Code) ===", flush=True)
     print(f"Challenges: {len(CHALLENGE_LIST)}", flush=True)
     print(f"Config: {config_path}", flush=True)
-    print(f"Timeout: {config.driver.timeout}s per challenge", flush=True)
+    print(f"Timeout: easy={config.driver.timeout_easy}s, medium={config.driver.timeout_medium}s, hard={config.driver.timeout_hard}s", flush=True)
 
     results: list[tuple[int, str, SolveStatus]] = []
 
-    for cid, name in CHALLENGE_LIST:
+    # Tier boundaries based on challenge list ordering
+    # First ~20 are easy/gift, next ~20 beginner, rest medium/hard
+    EASY_THRESHOLD = 19  # first 19 challenges
+    MEDIUM_THRESHOLD = 60  # next ~40 challenges
+
+    for idx, (cid, name) in enumerate(CHALLENGE_LIST):
         if args.challenge_id and cid != args.challenge_id:
             continue
+
+        # Calculate timeout based on challenge position (difficulty proxy)
+        if idx < EASY_THRESHOLD:
+            challenge_timeout = config.driver.timeout_easy
+        elif idx < MEDIUM_THRESHOLD:
+            challenge_timeout = config.driver.timeout_medium
+        else:
+            challenge_timeout = config.driver.timeout_hard
 
         challenge = Challenge(
             id=cid,
@@ -153,7 +166,7 @@ def main() -> None:
         web_state.notify_challenge_start(cid, name)
 
         # Solve
-        result = solve_challenge(challenge, config, client, driver, template)
+        result = solve_challenge(challenge, config, client, driver, template, timeout_override=challenge_timeout)
         tracker.record(cid, result.status)
         web_state.notify_challenge_done(cid, result.status.value, result.flag, result.error_message)
 

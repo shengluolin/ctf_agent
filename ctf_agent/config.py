@@ -16,6 +16,9 @@ class BuuctfConfig(BaseModel):
 class DriverConfig(BaseModel):
     type: str = "claude_cli"
     timeout: int = 3600
+    timeout_easy: int = 1200  # 20 min for easy/gift challenges
+    timeout_medium: int = 2700  # 45 min for medium challenges
+    timeout_hard: int = 3600  # 60 min for hard challenges
     allowed_tools: list[str] = ["Bash"]
     docker_image: str = "kali-ctf:latest"
     api_key: str = ""
@@ -27,6 +30,7 @@ class RetryConfig(BaseModel):
     max_container_retries: int = 2
     container_retry_delay: int = 60
     inter_challenge_delay: int = 60
+    writeup_search_delay: int = 1500  # seconds before auto-searching writeups (default 25 min)
 
 
 class PathsConfig(BaseModel):

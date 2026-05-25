@@ -160,6 +160,7 @@ class ClaudeCliDriver(WorkerDriver):
                         stderr_chunks.append(se)
             except Exception as e:
                 read_error = str(e)
+                logger.warning("exec stream read error: %s", e)
             finally:
                 _close_stream(stream)
                 done.set()
@@ -174,6 +175,18 @@ class ClaudeCliDriver(WorkerDriver):
             # Try to kill the exec process
             _kill_exec(api, self._container, exec_id)
             reader.join(timeout=_KILL_JOIN_TIMEOUT)
+
+        if not timed_out and read_error:
+            logger.error("exec completed with read error: %s", read_error)
+
+        # Log early termination (reader finished much before timeout)
+        if not timed_out and not reader.is_alive() and stdout_chunks:
+            total_bytes = sum(len(c) for c in stdout_chunks)
+            if total_bytes < 500:
+                logger.warning(
+                    "exec produced very little output (%d bytes) before terminating",
+                    total_bytes,
+                )
 
         if read_error and not stderr_chunks:
             stderr_chunks.append(read_error)

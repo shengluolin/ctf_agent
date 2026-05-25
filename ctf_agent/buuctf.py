@@ -114,7 +114,13 @@ class BuuctfClient:
         self._request(f"/plugins/ctfd-whale/challenge/{cid}/container", "DELETE")
 
     def submit_flag(self, cid: int, flag: str) -> dict:
-        return self._request("/api/v1/challenges/attempt", "POST", {
-            "challenge_id": cid,
-            "submission": flag,
-        })
+        for attempt in range(3):
+            result = self._request("/api/v1/challenges/attempt", "POST", {
+                "challenge_id": cid,
+                "submission": flag,
+            })
+            if result.get("error") and "403" in result.get("error", ""):
+                logger.info("Flag submit got 403, retrying with fresh CSRF (attempt %d)", attempt + 1)
+                continue
+            return result
+        return result
