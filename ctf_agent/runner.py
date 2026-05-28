@@ -16,7 +16,7 @@ from ctf_agent.prompting import load_template
 from ctf_agent.solver import solve_challenge
 from ctf_agent.web.app import start_web_server
 from ctf_agent.web import state as web_state
-from ctf_agent.web.routers import renew
+from ctf_agent.web.routers import renew, challenges
 
 logger = logging.getLogger(__name__)
 
@@ -41,10 +41,57 @@ def _find_project_root() -> Path:
     return current
 
 
+def _add_challenge(cid: int, name: str, project_root: Path) -> bool:
+    """Add a new challenge to the challenge list."""
+    import sys
+    sys.path.insert(0, str(project_root / "scripts"))
+    from challenge_list import CHALLENGE_LIST
+
+    # Check if already exists
+    for existing_id, existing_name in CHALLENGE_LIST:
+        if existing_id == cid:
+            logger.warning("Challenge %d already in list: %s", cid, existing_name)
+            return False
+
+    # Read the file
+    list_path = project_root / "scripts" / "challenge_list.py"
+    with open(list_path, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    # Find the line with the closing bracket
+    new_entry = f"    ({cid}, \"{name}\"),\n"
+    new_lines = []
+    inserted = False
+
+    for line in lines:
+        if line.strip() == "]" and not inserted:
+            # Insert new entry before the closing bracket
+            new_lines.append(new_entry)
+            inserted = True
+        new_lines.append(line)
+
+    if not inserted:
+        # Fallback: append before last line
+        new_lines.insert(-1, new_entry)
+
+    # Write back
+    with open(list_path, "w", encoding="utf-8") as f:
+        f.writelines(new_lines)
+
+    # Also update the in-memory list
+    CHALLENGE_LIST.append((cid, name))
+
+    logger.info("Added challenge %d: %s", cid, name)
+    return True
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="CTF Agent - Automated CTF solver")
     parser.add_argument("--config", "-c", default="config.yaml", help="Path to config.yaml")
     parser.add_argument("--skip-solved", action="store_true", help="Skip challenges with existing writeups")
+    parser.add_argument("--one", action="store_true", help="Solve only one challenge then exit")
+    parser.add_argument("--add", metavar="ID", type=int, help="Add a challenge to the list by ID (fetches info from BUUCTF)")
+    parser.add_argument("--add-name", metavar="NAME", type=str, help="Challenge name (use with --add to override)")
     parser.add_argument("challenge_id", nargs="?", type=int, help="Solve only this challenge ID")
     args = parser.parse_args()
 
@@ -75,8 +122,35 @@ def main() -> None:
     # Create client
     client = BuuctfClient(config.buuctf)
 
-    # Wire client into renewal API
+    # Wire client into renewal API and challenges API
     renew.set_client(client)
+    challenges.set_buuctf_client(client)
+
+    # Handle --add: add new challenge and optionally run it
+    if args.add:
+        cid = args.add
+        if args.add_name:
+            name = args.add_name
+        else:
+            # Fetch challenge info from BUUCTF
+            info = client.get_challenge_info(cid)
+            if info:
+                name = info.get("name", f"Challenge {cid}")
+                print(f"Found challenge: {cid} - {name}", flush=True)
+            else:
+                logger.error("Failed to fetch challenge %d info from BUUCTF", cid)
+                logger.info("Use --add-name to provide a name manually")
+                sys.exit(1)
+
+        added = _add_challenge(cid, name, project_root)
+        if added:
+            print(f"Added [{cid}] {name} to challenge list", flush=True)
+        else:
+            print(f"Challenge {cid} already in list", flush=True)
+
+        # If also running, continue to solve
+        if not args.challenge_id and not args.one:
+            sys.exit(0)
 
     # Create progress tracker
     tracker = ProgressTracker(config.paths.resolve_progress())
@@ -184,6 +258,11 @@ def main() -> None:
             print(f"  Error: {result.error_message}", flush=True)
 
         results.append((cid, name, result.status))
+
+        # Exit after one challenge if --one flag is set
+        if args.one:
+            logger.info("Exiting after one challenge (--one flag)")
+            break
 
         # Interruptible inter-challenge delay
         for _ in range(config.retry.inter_challenge_delay):

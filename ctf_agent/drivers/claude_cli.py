@@ -80,6 +80,7 @@ class ClaudeCliDriver(WorkerDriver):
         timeout: int,
         on_stdout: Callable[[str], None] | None = None,
         workdir: str | None = None,
+        session_id: str | None = None,
     ) -> ExecuteResult:
         if self._container is None:
             raise RuntimeError("Container not running. Call ensure_running() first.")
@@ -88,9 +89,32 @@ class ClaudeCliDriver(WorkerDriver):
             "--dangerously-skip-permissions",
             "--output-format", "stream-json",
             "--verbose",
+        ]
+        if session_id:
+            command.extend(["--session-id", session_id])
+        command.extend(["-p", "--", prompt])
+
+        return self._exec_command(command, self._env, timeout, on_stdout, workdir=workdir)
+
+    def resume(
+        self,
+        session_id: str,
+        prompt: str,
+        timeout: int,
+        on_stdout: Callable[[str], None] | None = None,
+        workdir: str | None = None,
+    ) -> ExecuteResult:
+        """Resume an existing session with a new prompt."""
+        if self._container is None:
+            raise RuntimeError("Container not running. Call ensure_running() first.")
+        command = [
+            "claude",
+            "-r", session_id,
+            "--dangerously-skip-permissions",
+            "--output-format", "stream-json",
+            "--verbose",
             "-p", "--", prompt,
         ]
-
         return self._exec_command(command, self._env, timeout, on_stdout, workdir=workdir)
 
     def write_prompt_file(self, content: str) -> str:

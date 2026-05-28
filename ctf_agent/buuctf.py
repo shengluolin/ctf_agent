@@ -75,26 +75,39 @@ class BuuctfClient:
                 time.sleep(retry_delay)
 
             create_result = self._request(f"/plugins/ctfd-whale/challenge/{cid}/container", "POST")
+            logger.info("[%d] Container create API response: %s", cid, create_result)
             if create_result.get("error"):
                 logger.warning("[%d] Container create returned error: %s", cid, create_result["error"])
+                # If CSRF was refreshed, retry immediately
+                if "403" in str(create_result.get("error")) or "CSRF" in str(create_result.get("error")):
+                    logger.info("[%d] Retrying container creation after CSRF refresh", cid)
+                    create_result = self._request(f"/plugins/ctfd-whale/challenge/{cid}/container", "POST")
+                    logger.info("[%d] Container create retry response: %s", cid, create_result)
 
-            for _ in range(20):
+            for i in range(20):
                 time.sleep(3)
                 d = self._request(f"/plugins/ctfd-whale/challenge/{cid}/container")
+                logger.debug("[%d] Container poll %d: %s", cid, i, d)
 
                 if d.get("error"):
                     continue
 
                 if d.get("domain"):
-                    return f"http://{d['domain']}:{d.get('http_port', 80)}"
+                    url = f"http://{d['domain']}:{d.get('http_port', 80)}"
+                    logger.info("[%d] Container started: %s", cid, url)
+                    return url
                 if d.get("lan_domain") and d.get("port"):
                     ip = d.get("ip")
                     if ip:
-                        return f"http://{d['lan_domain']}.{ip}:{d['port']}"
+                        url = f"http://{d['lan_domain']}.{ip}:{d['port']}"
+                        logger.info("[%d] Container started: %s", cid, url)
+                        return url
 
+            logger.warning("[%d] Container not ready after 60s polling", cid)
             if attempt < max_retries - 1:
                 logger.warning("Container for %d not ready, retrying in %ds", cid, retry_delay)
 
+        logger.error("[%d] Failed to start container after %d attempts", cid, max_retries)
         return None
 
     def renew_container(self, cid: int) -> bool:
@@ -112,6 +125,54 @@ class BuuctfClient:
 
     def destroy_container(self, cid: int) -> None:
         self._request(f"/plugins/ctfd-whale/challenge/{cid}/container", "DELETE")
+
+    def get_container(self, cid: int) -> dict | None:
+        """Get current container info for a challenge."""
+        try:
+            d = self._request(f"/plugins/ctfd-whale/challenge/{cid}/container")
+            if d.get("error"):
+                return None
+            if d.get("domain"):
+                return {
+                    "url": f"http://{d['domain']}:{d.get('http_port', 80)}",
+                    "domain": d["domain"],
+                    "port": d.get("http_port", 80),
+                }
+            if d.get("lan_domain") and d.get("port"):
+                ip = d.get("ip")
+                if ip:
+                    return {
+                        "url": f"http://{d['lan_domain']}.{ip}:{d['port']}",
+                        "lan_domain": d["lan_domain"],
+                        "port": d["port"],
+                    }
+            return None
+        except Exception as e:
+            logger.error("[%d] Get container failed: %s", cid, e)
+            return None
+
+    def get_challenge_info(self, cid: int) -> dict | None:
+        """Get challenge info by ID from BUUCTF."""
+        try:
+            # BUUCTF challenges API
+            r = requests.get(
+                f"{self._base_url}/api/v1/challenges/{cid}",
+                headers={"Cookie": self._cookie},
+                timeout=15,
+            )
+            if r.status_code == 404:
+                logger.warning("Challenge %d not found", cid)
+                return None
+            if not r.ok:
+                logger.warning("Failed to get challenge %d: HTTP %d", cid, r.status_code)
+                return None
+            data = r.json()
+            if data.get("success"):
+                return data.get("data")
+            return data
+        except Exception as e:
+            logger.error("Get challenge %d failed: %s", cid, e)
+            return None
 
     def submit_flag(self, cid: int, flag: str) -> dict:
         for attempt in range(3):

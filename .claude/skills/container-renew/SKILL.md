@@ -1,58 +1,37 @@
 ---
 name: container-renew
-description: Manages BUUCTF challenge container renewal. The container expires after 1 hour. A signal file appears when renewal is needed. Check periodically and decide whether to renew.
+description: Container renewal is handled automatically by the backend. You do NOT need to manage containers yourself.
 license: MIT
-compatibility: Requires curl and access to the CTF agent dashboard API.
-allowed-tools: Bash
+compatibility: None - this skill is disabled
+allowed-tools: []
 metadata:
   user-invocable: "false"
 ---
 
-# Container Renewal
+# Container Management - Automatic
 
-BUUCTF challenge containers expire after **1 hour**. The control system monitors time and will notify you when renewal is needed.
+**容器由后台自动管理，你不需要做任何事情。**
 
-## How It Works
+## 工作原理
 
-When ~55 minutes have passed and you're still active, a signal file `.container_renew_ask` appears in your challenge directory.
+- 后台每 8 分钟自动检查并续期活跃的容器
+- 如果容器过期，后台会自动重建并注入新 URL
+- 你只需要专注于解题
 
-**You should check for this file periodically** (every few minutes), especially when you've been working for a long time.
+## 当你看到 "实例无法访问"
 
-## What To Do
+**不要尝试续期！** 等待后台注入新 URL，然后继续解题。
 
-1. Read the signal file:
-   ```bash
-   cat .container_renew_ask
-   ```
-
-2. **Evaluate**: Do you need more time?
-   - YES — You're making progress, found a vulnerability, or have a promising lead
-   - NO — You're completely stuck with no new ideas, or you're about to finish
-
-3. If YES, renew the container:
-   ```bash
-   curl -s -X POST "http://127.0.0.1:9090/api/challenges/{CHALLENGE_ID}/renew"
-   ```
-   Then delete the signal file:
-   ```bash
-   rm .container_renew_ask
-   ```
-
-4. If NO, just delete the signal file:
-   ```bash
-   rm .container_renew_ask
-   ```
-
-## Strategy
-
-- If you've been working for ~50 minutes and found a promising attack vector → renew
-- If you're actively debugging an exploit → renew
-- If you're stuck and cycling through failed attempts → consider not renewing
-- You can renew multiple times — each renewal gives you another hour
-
-## Quick Check Command
-
-Add this to your periodic checks:
-```bash
-[ -f .container_renew_ask ] && cat .container_renew_ask && echo "DECIDE: renew or dismiss?"
+后台会在几秒到一分钟后注入新 URL：
 ```
+## ✅ 新容器已就绪
+
+新的 URL: http://xxx.node5.buuoj.cn:81
+请立即使用新 URL 继续解题！
+```
+
+## 你只需要做的
+
+1. **专注于解题** - 分析漏洞，编写 exploit
+2. **等待新 URL** - 如果容器过期，后台会通知你
+3. **不要调用任何续期 API 或脚本**

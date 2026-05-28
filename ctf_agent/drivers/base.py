@@ -23,11 +23,28 @@ class WorkerDriver(abc.ABC):
         timeout: int,
         on_stdout: Callable[[str], None] | None = None,
         workdir: str | None = None,
+        session_id: str | None = None,
     ) -> ExecuteResult:
         """Execute the prompt inside the worker container and return output.
 
         on_stdout: optional callback invoked with each stdout chunk for real-time streaming.
         workdir: optional working directory inside the container.
+        session_id: optional session ID for continuing a conversation.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def resume(
+        self,
+        session_id: str,
+        prompt: str,
+        timeout: int,
+        on_stdout: Callable[[str], None] | None = None,
+        workdir: str | None = None,
+    ) -> ExecuteResult:
+        """Resume an existing session with a new prompt.
+
+        This injects new instructions into a running Claude session.
         """
         raise NotImplementedError
 

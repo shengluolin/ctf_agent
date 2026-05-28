@@ -5,3 +5,9 @@ __pycache__/
 node_modules/
 config.yaml
 data/
+*.tar
+*.tar.gz
+temp/
+.DS_Store
+__MACOSX/
+cookies.txt

@@ -9,12 +9,36 @@ import requests
 
 logger = logging.getLogger(__name__)
 
+# Global proxy setting, set by solver before searching
+_proxy: str = ""
+
+def set_proxy(proxy: str) -> None:
+    """Set proxy for writeup searches."""
+    global _proxy
+    _proxy = proxy
+
 _HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
     "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
 }
 
 _MAX_RESPONSE_SIZE = 512 * 1024  # 512KB limit
+
+# Domains that should NOT use proxy (China domestic sites)
+_DOMESTIC_DOMAINS = [
+    "csdn.net", "blog.csdn.net", "cnblogs.com", "xz.aliyun.com",
+    "freebuf.com", ".anquanke.com", "seebug.org", "paper.seebug.org"
+]
+
+def _get_proxies(url: str) -> dict:
+    """Get proxy configuration for requests. Skip proxy for domestic sites."""
+    if not _proxy:
+        return {}
+    # Check if URL is a domestic site
+    for domain in _DOMESTIC_DOMAINS:
+        if domain in url:
+            return {}  # No proxy for domestic sites
+    return {"http": _proxy, "https": _proxy}
 
 _HTML_TAG_RE = re.compile(r"<[^>]+>")
 
@@ -30,19 +54,20 @@ def search_writeup(challenge_name: str, max_results: int = 3) -> list[dict]:
     Returns list of dicts with keys: title, url, hints (list of strings)
     """
     results: list[dict] = []
-
-    queries = [
-        f"{challenge_name} writeup CTF",
-        f"{challenge_name} writeup",
-    ]
-
     seen_urls: set[str] = set()
 
-    for query in queries:
+    # Try multiple search sources
+    search_functions = [
+        _search_csdn,
+        _search_aliyun_xz,
+        _search_bing,
+    ]
+
+    for search_func in search_functions:
         if len(results) >= max_results:
             break
         try:
-            found = _search_google(query, seen_urls)
+            found = search_func(challenge_name, seen_urls)
             for item in found:
                 if len(results) >= max_results:
                     break
@@ -55,14 +80,15 @@ def search_writeup(challenge_name: str, max_results: int = 3) -> list[dict]:
                     })
                     seen_urls.add(item["url"])
         except Exception as e:
-            logger.warning("Writeup search failed for '%s': %s", query, e)
+            logger.warning("Writeup search failed with %s: %s", search_func.__name__, e)
 
     return results
 
 
-def _search_google(query: str, seen_urls: set[str]) -> list[dict]:
-    """Search Google and return result items with titles."""
-    url = f"https://www.google.com/search?q={urllib.parse.quote(query)}&hl=zh-CN"
+def _search_csdn(challenge_name: str, seen_urls: set[str]) -> list[dict]:
+    """Search CSDN for writeups."""
+    query = urllib.parse.quote(f"{challenge_name} writeup CTF")
+    url = f"https://so.csdn.net/so/search?q={query}&t=blog&domain="
     try:
         r = requests.get(url, headers=_HEADERS, timeout=10)
         if r.status_code != 200:
@@ -71,19 +97,67 @@ def _search_google(query: str, seen_urls: set[str]) -> list[dict]:
         return []
 
     items = []
-    for match in re.finditer(r'href="/url\?q=([^&"]+)', r.text):
-        link = urllib.parse.unquote(match.group(1))
+    # CSDN search results are in JSON format
+    try:
+        data = r.json()
+        for item in data.get("result", [])[:5]:
+            link = item.get("url", "")
+            if link in seen_urls:
+                continue
+            title = item.get("title", "")
+            items.append({"url": link, "title": title})
+    except Exception:
+        pass
+
+    return items
+
+
+def _search_aliyun_xz(challenge_name: str, seen_urls: set[str]) -> list[dict]:
+    """Search 先知社区 (Aliyun XZ) for writeups."""
+    query = urllib.parse.quote(challenge_name)
+    url = f"https://xz.aliyun.com/search?q={query}"
+    try:
+        r = requests.get(url, headers=_HEADERS, timeout=10)
+        if r.status_code != 200:
+            return []
+    except Exception:
+        return []
+
+    items = []
+    # Parse HTML for search results
+    for match in re.finditer(r'<a[^>]+href="(/t/[^"]+)"[^>]*>([^<]+)</a>', r.text):
+        link = "https://xz.aliyun.com" + match.group(1)
         if link in seen_urls:
             continue
-        skip_domains = ["google.com", "youtube.com", "facebook.com", "twitter.com"]
+        title = match.group(2).strip()
+        if len(title) > 5:  # Filter out short/irrelevant titles
+            items.append({"url": link, "title": title})
+    return items[:5]
+
+
+def _search_bing(challenge_name: str, seen_urls: set[str]) -> list[dict]:
+    """Search Bing for writeups (fallback)."""
+    query = urllib.parse.quote(f"{challenge_name} writeup CTF")
+    url = f"https://www.bing.com/search?q={query}"
+    try:
+        r = requests.get(url, headers=_HEADERS, timeout=10, proxies=_get_proxies(url))
+        if r.status_code != 200:
+            return []
+    except Exception:
+        return []
+
+    items = []
+    for match in re.finditer(r'<a[^>]+href="(https?://[^"]+)"[^>]*>([^<]+)</a>', r.text):
+        link = match.group(1)
+        if link in seen_urls:
+            continue
+        # Skip bing.com and other irrelevant domains
+        skip_domains = ["bing.com", "microsoft.com", "youtube.com", "facebook.com"]
         if any(d in link for d in skip_domains):
             continue
-        # Extract title from surrounding context
-        title = ""
-        title_match = re.search(r'>([^<]{5,80})</', r.text[match.end():match.end() + 300])
-        if title_match:
-            title = title_match.group(1).strip()
-        items.append({"url": link, "title": title})
+        title = match.group(2).strip()
+        if len(title) > 5:
+            items.append({"url": link, "title": title})
 
     return items[:5]
 
@@ -104,7 +178,7 @@ def _name_matches(text: str, challenge_name: str) -> bool:
 def _extract_hints(url: str, challenge_name: str) -> list[str]:
     """Fetch a writeup page and extract key hints."""
     try:
-        r = requests.get(url, headers=_HEADERS, timeout=10, stream=True)
+        r = requests.get(url, headers=_HEADERS, timeout=10, stream=True, proxies=_get_proxies(url))
         if r.status_code != 200:
             return []
         # Limit response size

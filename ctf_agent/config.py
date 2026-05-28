@@ -30,7 +30,8 @@ class RetryConfig(BaseModel):
     max_container_retries: int = 2
     container_retry_delay: int = 60
     inter_challenge_delay: int = 60
-    writeup_search_delay: int = 1500  # seconds before auto-searching writeups (default 25 min)
+    writeup_search_delay: int = 300  # seconds before auto-searching writeups (default 5 min)
+    proxy: str = ""  # e.g., "http://127.0.0.1:10808"
 
 
 class PathsConfig(BaseModel):

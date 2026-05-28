@@ -1,42 +1,60 @@
-#!/usr/bin/env python3
 import requests
 import re
+import time
 
-url = "http://f12c0b09-f929-48ca-b216-fc61cafc19d3.node5.buuoj.cn:81/index.php"
+URL = "http://2a494b8a-533b-4bc9-a8d3-22994ad0712e.node5.buuoj.cn:81/index.php"
+DELAY = 0.3
 
 session = requests.Session()
 
+# Get initial page to establish session
+r = session.get(URL, timeout=10)
+print(f"[*] Initial: {r.status_code}")
+
 for i in range(1001):
-    # Get the page
-    resp = session.get(url)
-    content = resp.text
+    # Check if we got the flag (actual flag format, not just the word "flag")
+    if 'flag{' in r.text:
+        print(f"\n[SUCCESS] FLAG FOUND after round {i}!")
+        # Extract flag
+        flag_match = re.search(r'flag\{[^}]*\}', r.text)
+        if flag_match:
+            print(f"Flag: {flag_match.group(0)}")
+        print(r.text)
+        break
 
-    # Extract the math expression
-    match = re.search(r'<br><br>([\d\s\+\-\*\/]+)<br><br>', content)
+    # Parse math expression
+    match = re.search(r'(\d+)\s*([+\-*/])\s*(\d+)', r.text)
     if not match:
-        print(f"[{i}] No expression found. Response: {content}")
+        print(f"\n[!] Round {i}: Could not parse expression")
+        print(r.text[:500])
         break
 
-    expr = match.group(1).strip()
-    # Calculate the result
-    result = eval(expr)
-
-    # Check current progress
-    progress_match = re.search(r'第 (\d+) 次成功啦', content)
-    if progress_match:
-        progress = int(progress_match.group(1))
-        print(f"[Round {i}] Progress: {progress}/1000 | {expr} = {result}")
+    a, op, b = int(match.group(1)), match.group(2), int(match.group(3))
+    if op == '+':
+        ans = a + b
+    elif op == '-':
+        ans = a - b
+    elif op == '*':
+        ans = a * b
+    elif op == '/':
+        ans = a // b
     else:
-        print(f"[Round {i}] {expr} = {result}")
-
-    # Submit the answer
-    resp = session.post(url, data={"answer": str(result)})
-    content = resp.text
-
-    # Check if we got the flag (look for flag pattern)
-    flag_match = re.search(r'flag\{[^}]+\}', content, re.IGNORECASE)
-    if flag_match:
-        print(f"\n[+] FLAG: {flag_match.group()}")
+        print(f"\n[!] Unknown operator: {op}")
         break
 
-print("Done!")
+    # Count display
+    count_match = re.search(r'第 (\d+) 次成功啦', r.text)
+    count = count_match.group(1) if count_match else '?'
+    if i % 50 == 0:
+        print(f"\r[*] Round {count}: {a} {op} {b} = {ans}", end="", flush=True)
+
+    # Submit answer
+    time.sleep(DELAY)
+    r = session.post(URL, data={"answer": str(ans)}, timeout=10)
+
+    if r.status_code != 200:
+        print(f"\n[!] HTTP {r.status_code}")
+        time.sleep(2)
+        continue
+
+print("\n[*] Done")

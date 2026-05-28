@@ -425,6 +425,51 @@
         }
 
         input, textarea { font-family: inherit; }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal {
+            background: var(--bg-raised);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            min-width: 400px;
+            max-width: 90vw;
+        }
+        .modal-title {
+            font-family: var(--font-mono);
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--accent-cyan);
+        }
+        .modal-input {
+            background: var(--bg-deep);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 8px 12px;
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 14px;
+            width: 100%;
+            margin-bottom: 8px;
+        }
+        .modal-input:focus { outline: none; border-color: var(--accent-cyan); }
+        .modal-input::placeholder { color: var(--text-tertiary); }
+        .modal-row { display: flex; gap: 8px; margin-bottom: 12px; }
+        .modal-row input { flex: 1; }
+        .modal-hint { font-size: 12px; color: var(--text-tertiary); margin-bottom: 12px; }
+        .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+        .modal-error { background: rgba(255,71,87,0.1); border: 1px solid rgba(255,71,87,0.25); border-radius: 4px; padding: 8px 12px; color: var(--accent-red); font-size: 13px; margin-top: 8px; }
+        .modal-success { background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.25); border-radius: 4px; padding: 8px 12px; color: var(--accent-green); font-size: 13px; margin-top: 8px; }
     </style>
 </head>
 <body>
@@ -433,22 +478,25 @@
     <!-- Header -->
     <header class="header-bar">
         <div class="header-title">CTF AGENT</div>
-        <div class="hud-stats">
-            <div class="hud-stat hud-stat-cyan">
-                <div class="hud-stat-num" x-text="stats.solving"></div>
-                <div class="hud-stat-label">Active</div>
-            </div>
-            <div class="hud-stat hud-stat-green">
-                <div class="hud-stat-num" x-text="stats.solved"></div>
-                <div class="hud-stat-label">Solved</div>
-            </div>
-            <div class="hud-stat hud-stat-red">
-                <div class="hud-stat-num" x-text="stats.failed + stats.error"></div>
-                <div class="hud-stat-label">Failed</div>
-            </div>
-            <div class="hud-stat hud-stat-amber">
-                <div class="hud-stat-num" x-text="stats.timeout"></div>
-                <div class="hud-stat-label">Timeout</div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <button class="btn btn-ghost" @click="showAddModal = true" style="font-size: 12px;">+ Add Challenge</button>
+            <div class="hud-stats">
+                <div class="hud-stat hud-stat-cyan">
+                    <div class="hud-stat-num" x-text="stats.solving"></div>
+                    <div class="hud-stat-label">Active</div>
+                </div>
+                <div class="hud-stat hud-stat-green">
+                    <div class="hud-stat-num" x-text="stats.solved"></div>
+                    <div class="hud-stat-label">Solved</div>
+                </div>
+                <div class="hud-stat hud-stat-red">
+                    <div class="hud-stat-num" x-text="stats.failed + stats.error"></div>
+                    <div class="hud-stat-label">Failed</div>
+                </div>
+                <div class="hud-stat hud-stat-amber">
+                    <div class="hud-stat-num" x-text="stats.timeout"></div>
+                    <div class="hud-stat-label">Timeout</div>
+                </div>
             </div>
         </div>
     </header>
@@ -599,6 +647,33 @@
         </div>
     </div>
 
+    <!-- Add Challenge Modal -->
+    <div class="modal-overlay" x-show="showAddModal" x-transition.opacity @click.self="showAddModal = false">
+        <div class="modal" @click.stop>
+            <div class="modal-title">+ Add Challenge</div>
+            <div class="modal-row">
+                <input type="number" class="modal-input" placeholder="Challenge ID (e.g. 1234)" x-model="addForm.id" style="width: 120px;">
+            </div>
+            <div class="modal-row">
+                <input type="text" class="modal-input" placeholder="Name (optional - auto-fetch from BUUCTF)" x-model="addForm.name">
+            </div>
+            <div class="modal-hint">Leave name empty to auto-fetch from BUUCTF. If challenge not found, you must provide a name.</div>
+            <template x-if="addForm.error">
+                <div class="modal-error" x-text="addForm.error"></div>
+            </template>
+            <template x-if="addForm.success">
+                <div class="modal-success" x-text="addForm.success"></div>
+            </template>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" @click="closeAddModal()">Cancel</button>
+                <button class="btn btn-primary" @click="submitAddChallenge()" :disabled="addForm.loading || !addForm.id">
+                    <span x-show="addForm.loading" class="spinner" style="width: 12px; height: 12px; margin-right: 6px;"></span>
+                    Add
+                </button>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script>
@@ -614,6 +689,8 @@ function ctfApp() {
         activeTab: 'facts',
         hintInput: '',
         pollTimer: null,
+        showAddModal: false,
+        addForm: { id: '', name: '', error: '', success: '', loading: false },
 
         async init() {
             await this.loadChallenges();
@@ -716,6 +793,42 @@ function ctfApp() {
                 await fetch('/api/hints/' + hintId, { method: 'DELETE' });
                 await this.loadChallengeDetail(this.selectedId);
             } catch (e) {}
+        },
+
+        closeAddModal() {
+            this.showAddModal = false;
+            this.addForm = { id: '', name: '', error: '', success: '', loading: false };
+        },
+
+        async submitAddChallenge() {
+            if (!this.addForm.id) return;
+            this.addForm.loading = true;
+            this.addForm.error = '';
+            this.addForm.success = '';
+
+            try {
+                const resp = await fetch('/api/challenges/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        challenge_id: parseInt(this.addForm.id),
+                        name: this.addForm.name || null,
+                    }),
+                });
+                const result = await resp.json();
+
+                if (result.success) {
+                    this.addForm.success = result.message;
+                    await this.loadChallenges();
+                    setTimeout(() => this.closeAddModal(), 1500);
+                } else {
+                    this.addForm.error = result.message;
+                }
+            } catch (e) {
+                this.addForm.error = 'Failed to add challenge: ' + e.message;
+            }
+
+            this.addForm.loading = false;
         },
 
         formatDuration(seconds) {
